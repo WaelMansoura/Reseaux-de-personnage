@@ -1,12 +1,14 @@
 from nlp_aliases import group_aliases, alias_dictionary, merge_alias_counts
 from nlp_utils import read_file, load_anti_dict
 from nlp_extract_characters import extract_entities, count_entities, filter_persons, filter_locations
+from nlp_multi_ner import ensemble_entities
     
 def main():
     texte = read_file("output.txt")
 
     # 1. Extract ALL entities (raw)
-    raw_entities = extract_entities(texte)
+    # raw_entities = extract_entities(texte)
+    raw_entities = ensemble_entities(texte, method="vote")
 
     # 2. Count all entities → L
     L = count_entities(raw_entities)

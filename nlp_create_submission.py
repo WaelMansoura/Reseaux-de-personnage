@@ -13,7 +13,7 @@ importlib.reload(importlib.import_module("nlp_cooccurrence"))
 importlib.reload(importlib.import_module("nlp_graph"))
 importlib.reload(importlib.import_module("nlp_multi_ner"))
 
-from nlp_extract_characters import extract_entities, count_entities, filter_persons
+from nlp_extract_characters import extract_entities, count_entities, filter_persons, filter_locations
 from nlp_utils import read_file, load_anti_dict
 from nlp_aliases import group_aliases, alias_dictionary, merge_alias_counts
 from nlp_cooccurrence import detect_cooccurrences
@@ -43,8 +43,23 @@ def process_chapter(chapter_file, anti_dict, distance_max=25):
     # 2. Count entities
     L = count_entities(raw_entities)
     
-    # 3. Filter persons
+    # 3.1. Filter persons
     LP = filter_persons(L, anti_dict=anti_dict)
+
+    # 3.2. Filter locations (not used further here, but could be)
+    LL = filter_locations(L)
+
+    # 3.3 Store L,LP, LL in files
+    base_filename = os.path.splitext(os.path.basename(chapter_file))[0]
+    with open(f"{base_filename}_L.txt", "w", encoding="utf8") as f:
+        for (text, label), count in L.most_common():
+            f.write(f"{text:30}  {label:5}  {count}\n")
+    with open(f"{base_filename}_LP.txt", "w", encoding="utf8") as f:
+        for text, count in LP.most_common():
+            f.write(f"{text:30}  {count}\n")
+    with open(f"{base_filename}_LL.txt", "w", encoding="utf8") as f:
+        for text, count in LL.most_common():
+            f.write(f"{text:30}  {count}\n")
     
     # 4. Group aliases
     groups = group_aliases(LP)

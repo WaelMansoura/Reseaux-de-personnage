@@ -55,6 +55,7 @@ def nettoyer_bytes_rapide(data_brute: bytes) -> bytes:
 pdf_files = [
     "Books/Fondation_sample.pdf",
     "Books/Fondation_et_empire_sample.pdf",
+    "Books/Fondation_foudroyée_sample.pdf",
     "Books/Seconde_Fondation_sample.pdf",
     "Books/Terre_et_Fondation_sample.pdf"
 ]

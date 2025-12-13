@@ -1,8 +1,5 @@
 import spacy
 import stanza
-from flair.data import Sentence
-from flair.models import SequenceTagger
-
 from collections import Counter, defaultdict
 import re
 
@@ -14,15 +11,13 @@ spacy_nlp = spacy.load("fr_core_news_lg")
 stanza.download("fr")
 stanza_nlp = stanza.Pipeline(lang="fr", processors="tokenize,ner", use_gpu=True)
 
-flair_tagger = SequenceTagger.load("ner-multi")   # multilingual
-
 
 # ---------------------------------------
 # Normalization function
 # ---------------------------------------
 def normalize_span(text):
     t = text.strip()
-    t = re.sub(r"[«»“”]", "", t)
+    t = re.sub(r"[«»""]", "", t)
     return t
 
 
@@ -44,16 +39,6 @@ def extract_stanza(text):
     return ents
 
 
-def extract_flair(text):
-    sentence = Sentence(text)
-    flair_tagger.predict(sentence)
-
-    ents = []
-    for entity in sentence.get_spans('ner'):
-        ents.append((normalize_span(entity.text), entity.tag))
-    return ents
-
-
 # ---------------------------------------
 # Ensemble Logic
 # ---------------------------------------
@@ -61,18 +46,16 @@ def ensemble_entities(text, method="vote"):
     """
     method:
         - union → keep all entities
-        - intersection → only keep those found by all models
-        - vote → keep if at least 2/3 models agree
+        - intersection → only keep those found by both models
+        - vote → keep if both models agree
     """
 
     spa = extract_spacy(text)
     sta = extract_stanza(text)
-    fla = extract_flair(text)
 
     all_entities = {
         "spacy": spa,
-        "stanza": sta,
-        "flair": fla
+        "stanza": sta
     }
 
     # Map: entity_text → {labels...}
@@ -93,7 +76,7 @@ def ensemble_entities(text, method="vote"):
             final.append((text, best_label))
 
         elif method == "intersection":
-            if votes == 3:
+            if votes == 2:
                 final.append((text, best_label))
 
         elif method == "vote":
