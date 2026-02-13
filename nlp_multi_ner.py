@@ -2,15 +2,61 @@ import spacy
 import stanza
 from collections import Counter, defaultdict
 import re
+from pathlib import Path
 
 # ---------------------------------------
 # Load models once (important for speed)
 # ---------------------------------------
 spacy_nlp = spacy.load("fr_core_news_lg")
 
+# ---------------------------------------
+# Add EntityRuler for character extraction
+# ---------------------------------------
+def load_character_patterns(character_file="characters.txt"):
+    """
+    Load character names from file and create patterns for EntityRuler.
+    Args:
+        character_file: Path to character list file (one name per line)
+    Returns:
+        List of pattern dictionaries for EntityRuler
+    """
+    patterns = []
+    file_path = Path(__file__).parent / character_file
+    
+    if file_path.exists():
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                name = line.strip()
+                # Skip comments and empty lines
+                if not name or name.startswith('#'):
+                    continue
+                # Add each character name as a pattern
+                patterns.append({
+                    "label": "PER",  # Person entity label
+                    "pattern": name
+                })
+    else:
+        print(f"Warning: Character file {character_file} not found")
+    
+    return patterns
+
+# Create and add EntityRuler to pipeline
+def setup_entity_ruler(nlp, character_file="characters.txt"):
+    """
+    Add EntityRuler to the spaCy pipeline with character patterns.
+    Args:
+        nlp: spaCy language model
+        character_file: Path to character list file
+    """
+    ruler = nlp.add_pipe("entity_ruler", before="ner")
+    character_patterns = load_character_patterns(character_file)
+    ruler.add_patterns(character_patterns)
+    print(f"Loaded {len(character_patterns)} character patterns for NER enhancement")
+
 stanza.download("fr")
 stanza_nlp = stanza.Pipeline(lang="fr", processors="tokenize,ner", use_gpu=True)
 
+setup_entity_ruler(spacy_nlp, character_file="characters.txt")
 
 # ---------------------------------------
 # Normalization function

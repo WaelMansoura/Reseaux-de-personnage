@@ -21,7 +21,7 @@ from nlp_graph import generate_graph
 from nlp_multi_ner import ensemble_entities
 
 # %%
-def process_chapter(chapter_file, anti_dict, distance_max=25):
+def process_chapter(chapter_file, anti_dict, distance_max=25, chapter_id=""):
     """
     Process a single chapter and return a NetworkX graph with 'names' attributes.
     
@@ -29,7 +29,7 @@ def process_chapter(chapter_file, anti_dict, distance_max=25):
         chapter_file (str): Path to chapter file
         anti_dict (set): Anti-dictionary for filtering
         distance_max (int): Co-occurrence distance threshold
-    
+        chapter_id (str): Identifier for the chapter
     Returns:
         nx.Graph: Graph with nodes having 'names' attribute
     """
@@ -46,20 +46,21 @@ def process_chapter(chapter_file, anti_dict, distance_max=25):
     # 3.1. Filter persons
     LP = filter_persons(L, anti_dict=anti_dict)
 
+    print(f"LP: {len(LP)}", end="  ")
+
     # 3.2. Filter locations (not used further here, but could be)
     LL = filter_locations(L)
 
     # 3.3 Store L,LP, LL in files
-    base_filename = os.path.splitext(os.path.basename(chapter_file))[0]
-    with open(f"{base_filename}_L.txt", "w", encoding="utf8") as f:
-        for (text, label), count in L.most_common():
-            f.write(f"{text:30}  {label:5}  {count}\n")
-    with open(f"{base_filename}_LP.txt", "w", encoding="utf8") as f:
-        for text, count in LP.most_common():
-            f.write(f"{text:30}  {count}\n")
-    with open(f"{base_filename}_LL.txt", "w", encoding="utf8") as f:
-        for text, count in LL.most_common():
-            f.write(f"{text:30}  {count}\n")
+    with open(f"{chapter_id}_L.txt", "w", encoding="utf8") as f:
+        for (entity_text, label), count in L.most_common():
+            f.write(f"{entity_text:30}  {label:5}  {count}\n")
+    with open(f"{chapter_id}_LP.txt", "w", encoding="utf8") as f:
+        for entity_text, count in LP.most_common():
+            f.write(f"{entity_text:30}  {count}\n")
+    with open(f"{chapter_id}_LL.txt", "w", encoding="utf8") as f:
+        for entity_text, count in LL.most_common():
+            f.write(f"{entity_text:30}  {count}\n")
     
     # 4. Group aliases
     groups = group_aliases(LP)
@@ -73,7 +74,6 @@ def process_chapter(chapter_file, anti_dict, distance_max=25):
     G = generate_graph(cooccurrences, LP_merged)
     
     # 7. Add 'names' attribute to each node
-    # This is CRITICAL for Kaggle submission
     for group in groups:
         canonical = group[0]  # First name is canonical
         if canonical in G.nodes:
@@ -137,7 +137,7 @@ def generate_submission(
                 print(f"   📄 Processing {chapter_id}...", end=" ")
                 
                 # Process chapter
-                G = process_chapter(chapter_file, anti_dict, distance_max)
+                G = process_chapter(chapter_file, anti_dict, distance_max, chapter_id)
                 
                 # Convert to GraphML string
                 graphml = "".join(nx.generate_graphml(G))
