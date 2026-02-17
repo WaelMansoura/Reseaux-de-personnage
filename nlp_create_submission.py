@@ -3,6 +3,8 @@ import os
 import networkx as nx
 import pandas as pd
 import importlib
+from multiprocessing import Pool, cpu_count
+from functools import partial
 
 
 # Reload all your modules
@@ -162,6 +164,125 @@ def generate_submission(
     
     print(f"\n{'='*60}")
     print(f"✅ SUBMISSION COMPLETE")
+    print(f"{'='*60}")
+    print(f"Output file: {output_csv}")
+    print(f"Chapters processed: {processed}/{total_chapters}")
+    print(f"Missing: {total_chapters - processed}")
+    
+    return df
+
+
+# %%
+# =============================================================================
+# PARALLEL PROCESSING FUNCTIONS
+# =============================================================================
+
+def _process_chapter_wrapper(args):
+    """
+    Wrapper function for multiprocessing.
+    Must be at module level to be picklable.
+    
+    Args:
+        args: Tuple of (chapter_file, anti_dict, distance_max, chapter_id)
+    
+    Returns:
+        Tuple of (chapter_id, graphml_string, num_nodes, num_edges) or None on error
+    """
+    chapter_file, anti_dict, distance_max, chapter_id = args
+    
+    try:
+        # Process chapter
+        G = process_chapter(chapter_file, anti_dict, distance_max, chapter_id)
+        
+        # Convert to GraphML string
+        graphml = "".join(nx.generate_graphml(G))
+        
+        return (chapter_id, graphml, G.number_of_nodes(), G.number_of_edges())
+        
+    except Exception as e:
+        print(f"   ❌ Error processing {chapter_id}: {e}")
+        return None
+
+
+def generate_submission_parallel(
+    books_config,
+    anti_dict_file,
+    output_csv="submission.csv",
+    distance_max=25,
+    n_processes=None
+):
+    """
+    Generate submission CSV using parallel processing for faster execution.
+    
+    Args:
+        books_config (list): List of (chapter_numbers, book_code, folder_path) tuples
+        anti_dict_file (str): Path to anti-dictionary
+        output_csv (str): Output CSV filename
+        distance_max (int): Co-occurrence distance threshold
+        n_processes (int): Number of parallel processes (None = auto-detect CPU count)
+    
+    Returns:
+        pd.DataFrame: Submission dataframe
+    """
+    # Load anti-dictionary once
+    print(f"📚 Loading anti-dictionary from: {anti_dict_file}")
+    anti_dict = load_anti_dict(anti_dict_file)
+    print(f"   ✓ Loaded {len(anti_dict)} entries")
+    
+    # Determine number of processes
+    if n_processes is None:
+        n_processes = max(1, cpu_count() - 1)  # Leave one CPU free
+    
+    print(f"🚀 Using {n_processes} parallel processes")
+    
+    # Collect all chapter tasks
+    tasks = []
+    total_chapters = 0
+    
+    for chapters, book_code, folder_path in books_config:
+        for chapter_num in chapters:
+            chapter_id = f"{book_code}{chapter_num}"
+            chapter_file = os.path.join(
+                folder_path, 
+                f"chapter_{chapter_num + 1}.txt.preprocessed"
+            )
+            
+            # Check if file exists
+            if os.path.isfile(chapter_file):
+                tasks.append((chapter_file, anti_dict, distance_max, chapter_id))
+                total_chapters += 1
+            else:
+                print(f"   ⚠️  {chapter_id}: File not found: {chapter_file}")
+    
+    print(f"\n📖 Processing {total_chapters} chapters in parallel...")
+    
+    # Process chapters in parallel
+    df_dict = {"ID": [], "graphml": []}
+    processed = 0
+    
+    with Pool(processes=n_processes) as pool:
+        # Use imap_unordered for better progress tracking
+        results = pool.imap_unordered(_process_chapter_wrapper, tasks)
+        
+        for i, result in enumerate(results, 1):
+            if result is not None:
+                chapter_id, graphml, num_nodes, num_edges = result
+                df_dict["ID"].append(chapter_id)
+                df_dict["graphml"].append(graphml)
+                processed += 1
+                print(f"   ✓ [{i}/{total_chapters}] {chapter_id} (Nodes: {num_nodes}, Edges: {num_edges})")
+            else:
+                print(f"   ❌ [{i}/{total_chapters}] Failed")
+    
+    # Create DataFrame
+    df = pd.DataFrame(df_dict)
+    df.set_index("ID", inplace=True)
+    
+    # Save to CSV
+    df.to_csv(output_csv, encoding="utf-8")
+    
+    print(f"\n{'='*60}")
+    print(f"✅ SUBMISSION COMPLETE (PARALLEL)")
     print(f"{'='*60}")
     print(f"Output file: {output_csv}")
     print(f"Chapters processed: {processed}/{total_chapters}")

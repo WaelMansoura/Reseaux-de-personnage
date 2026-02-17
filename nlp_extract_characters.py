@@ -2,12 +2,33 @@ import spacy
 from collections import Counter
 import re
 
+# =============================================================================
+# LAZY LOADING - spaCy model loaded only once
+# =============================================================================
+
+_nlp_model = None
+
+def get_spacy_model():
+    """
+    Lazy load spaCy model for entity extraction.
+    Model is loaded only once, even if module is reloaded.
+    """
+    global _nlp_model
+    
+    if _nlp_model is None:
+        print("🔄 Loading spaCy model for entity extraction...")
+        _nlp_model = spacy.load("fr_core_news_lg")
+        print("✅ spaCy model loaded!")
+    
+    return _nlp_model
+
+
 def extract_entities(text: str):
     """
     Returns raw NER counts:
         - L: all named entities
     """
-    nlp = spacy.load("fr_core_news_lg")
+    nlp = get_spacy_model()  # Lazy load
     doc = nlp(text)
 
     entities = []

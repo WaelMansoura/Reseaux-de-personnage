@@ -1,0 +1,388 @@
+\documentclass[12pt,a4paper]{article}
+
+% ============================================
+% PACKAGES
+% ============================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{tocloft}
+\usepackage{parskip}
+
+% ============================================
+% CONFIGURATION
+% ============================================
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black,
+    pdftitle={Cahier des Charges - Extraction automatique de réseaux de personnages},
+    pdfauthor={Lotfi ABDALLAH, Wael MANSOURA}
+}
+
+% En-têtes et pieds de page
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Cahier des Charges}
+\fancyhead[R]{\small Réseaux de Personnages}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Formatage des sections
+\titleformat{\section}
+    {\normalfont\Large\bfseries\color{blue!60!black}}
+    {\thesection.}{0.5em}{}
+\titleformat{\subsection}
+    {\normalfont\large\bfseries}
+    {\thesubsection.}{0.5em}{}
+
+% ============================================
+% DOCUMENT
+% ============================================
+\begin{document}
+
+% ============================================
+% PAGE DE TITRE
+% ============================================
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\scshape\LARGE Université d'Avignon \par}
+    \vspace{0.5cm}
+    {\scshape\Large Master 1 -- AMS \par}
+    \vspace{2cm}
+    
+    \rule{\textwidth}{1.5pt}\par
+    \vspace{0.8cm}
+    {\Huge\bfseries Cahier des Charges\par}
+    \vspace{0.5cm}
+    {\LARGE Extraction automatique de réseaux de personnages\par}
+    \vspace{0.8cm}
+    \rule{\textwidth}{1.5pt}\par
+    
+    \vspace{2cm}
+    
+    {\Large\itshape Lotfi ABDALLAH \\ Wael MANSOURA\par}
+    
+    \vfill
+    
+    {\large Année universitaire 2024--2025\par}
+\end{titlepage}
+
+% ============================================
+% TABLE DES MATIÈRES
+% ============================================
+\tableofcontents
+\newpage
+
+% ============================================
+% SECTION 1 : CONTEXTE ET OBJECTIFS
+% ============================================
+\section{Contexte et Objectifs du Projet}
+
+\subsection{Contexte}
+
+L'extraction automatique de réseaux de personnages à partir de textes narratifs est une tâche complexe qui combine des techniques de traitement du langage naturel (NLP) et la modélisation graphique.
+
+Ce projet vise à développer un système capable~:
+\begin{itemize}[noitemsep]
+    \item d'identifier les personnages dans un texte,
+    \item de détecter leurs interactions,
+    \item de construire un réseau représentatif des relations entre ces personnages.
+\end{itemize}
+
+\subsection{Objectifs}
+
+Les objectifs principaux du projet sont~:
+\begin{itemize}
+    \item Développer un algorithme d'extraction de personnages à partir de textes narratifs.
+    \item Construire des listes~:
+    \begin{itemize}
+        \item \textbf{L} -- toutes les entités nommées candidates,
+        \item \textbf{LP} -- les personnages (personnes),
+        \item \textbf{LL} -- les lieux.
+    \end{itemize}
+    \item Détecter les cooccurrences de personnages en utilisant la proximité textuelle.
+    \item Construire un réseau de personnages basé sur les interactions détectées.
+\end{itemize}
+
+% ============================================
+% SECTION 2 : PÉRIMÈTRE DU PROJET
+% ============================================
+\section{Périmètre du Projet}
+
+\subsection{Fonctionnalités attendues}
+
+\begin{enumerate}
+    \item Extraction des entités nommées.
+    \item Filtrage des personnes (liste \textbf{LP}).
+    \item Filtrage des lieux (liste \textbf{LL}).
+    \item Regroupement d'alias pour chaque personnage.
+    \item Génération du graphe avec \texttt{NetworkX} pour chaque chapitre.
+    \item Détection des interactions entre les personnages.
+    \item Construction et visualisation du réseau de personnages.
+    \item Export CSV des résultats pour plusieurs chapitres.
+\end{enumerate}
+
+\subsection{Technologies utilisées}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Catégorie} & \textbf{Outils / Technologies} \\
+\midrule
+Langage de programmation & Python \\
+Bibliothèques NLP & spaCy, Stanza, Flair \\
+Visualisation & NetworkX, Matplotlib \\
+Filtrage & \texttt{antidict.txt} (entités non pertinentes) \\
+\bottomrule
+\end{tabular}
+\caption{Technologies et outils utilisés}
+\end{table}
+
+% ============================================
+% SECTION 3 : PUBLIC CIBLE
+% ============================================
+\section{Public Cible}
+
+\subsection{Profil des utilisateurs}
+
+\begin{itemize}
+    \item Étudiants en informatique.
+    \item Chercheurs en linguistique computationnelle.
+    \item Développeurs en traitement du langage naturel.
+\end{itemize}
+
+\subsection{Besoins des utilisateurs}
+
+\begin{itemize}
+    \item Outils efficaces pour l'extraction de réseaux de personnages.
+    \item Visualisation claire des réseaux de personnages.
+\end{itemize}
+
+% ============================================
+% SECTION 4 : SCÉNARIOS DE TESTS UTILISATEURS
+% ============================================
+\section{Scénarios de Tests Utilisateurs}
+
+\subsection{Objectifs des tests}
+
+\begin{itemize}
+    \item Valider que les outils d'extraction identifient correctement les personnages importants.
+    \item Vérifier la pertinence du regroupement d'alias.
+    \item Évaluer la cohérence des co-occurrences détectées.
+\end{itemize}
+
+\subsection{Méthodologie}
+
+\begin{enumerate}
+    \item Sélectionner un ensemble de textes narratifs variés.
+    \item Appliquer les outils d'extraction développés.
+    \item Comparer les résultats obtenus avec des annotations manuelles.
+\end{enumerate}
+
+% ============================================
+% SECTION 5 : CRITÈRES DE RÉUSSITE
+% ============================================
+\section{Critères de Réussite et Évaluations}
+
+\subsection{Indicateurs de performance (KPI)}
+
+\begin{itemize}
+    \item Taux de précision de l'extraction des personnages.
+    \item Score de précision du graphe de personnages par chapitre sur le classement Kaggle.
+    \item Temps de génération du graphe pour chaque chapitre.
+\end{itemize}
+
+\subsection{Feedback des utilisateurs / professeurs}
+
+\begin{itemize}
+    \item Utilisation de plusieurs modèles NLP pour extraire les personnages.
+    \item Méthode de \textbf{vote} pour identifier les personnages corrects, plutôt que d'utiliser l'intersection ou l'union simple des résultats.
+\end{itemize}
+
+% ============================================
+% SECTION 6 : CONTRAINTES ET RISQUES
+% ============================================
+\section{Contraintes et Risques}
+
+\subsection{Contraintes techniques}
+
+\begin{itemize}
+    \item Limites des modèles NLP pour la reconnaissance des entités nommées.
+    \item Gestion des ambiguïtés dans les noms des personnages.
+    \item Performance et scalabilité pour traiter de grands textes narratifs.
+    \item Fusion des résultats de plusieurs modèles NLP pour améliorer la précision.
+\end{itemize}
+
+\subsection{Risques potentiels}
+
+\begin{itemize}
+    \item Mauvaise détection d'entités à cause du style littéraire.
+    \item Difficulté à atteindre un taux de précision élevé.
+    \item Problèmes de performance avec de grands volumes de texte.
+\end{itemize}
+
+% ============================================
+% SECTION 7 : PLANNING PRÉVISIONNEL
+% ============================================
+\section{Planning Prévisionnel}
+
+\subsection{Phases du projet}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{@{}lc@{}}
+\toprule
+\textbf{Phase} & \textbf{Durée} \\
+\midrule
+Analyse et traitement du corpus & 2 semaines \\
+Développement extraction NER \& listes L/LP/LL & 3 semaines \\
+Détection des co-occurrences & 2 semaines \\
+Génération des graphes & 2 semaines \\
+Ajustements finaux + rapport & 1 semaine \\
+\midrule
+\textbf{Total} & \textbf{10 semaines} \\
+\bottomrule
+\end{tabular}
+\caption{Planning prévisionnel du projet}
+\end{table}
+
+\subsection{Livrables}
+
+\begin{itemize}
+    \item Listes L, LP, LL.
+    \item Graphes de personnages par chapitre.
+    \item Fichiers CSV des résultats.
+    \item Cahier des charges finalisé.
+\end{itemize}
+
+% ============================================
+% SECTION 8 : ÉQUIPE DU PROJET
+% ============================================
+\section{Équipe du Projet}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Membre} & \textbf{Responsabilités} \\
+\midrule
+Lotfi ABDALLAH & Développement NLP, extraction NER, listes L/LP/LL \\
+Wael MANSOURA & Détection co-occurrences, génération graphes \\
+\bottomrule
+\end{tabular}
+\caption{Répartition des responsabilités}
+\end{table}
+
+% ============================================
+% SECTION 9 : ANNEXES
+% ============================================
+\section{Annexes}
+
+\subsection{Architecture du système}
+
+Le pipeline d'extraction de réseaux de personnages suit l'architecture suivante~:
+
+\begin{center}
+\fbox{%
+\begin{minipage}{0.9\textwidth}
+\centering
+\vspace{0.5em}
+\textbf{Pipeline de traitement}
+\vspace{0.5em}
+
+\texttt{Texte brut (.txt)}
+
+$\downarrow$
+
+\texttt{NER multi-modèles (spaCy + Stanza)}
+
+$\downarrow$
+
+\texttt{Liste L (toutes entités)}
+
+$\downarrow$
+
+\texttt{Filtrage + antidict.txt}
+
+$\downarrow$
+
+\texttt{Liste LP (personnes) \quad Liste LL (lieux)}
+
+$\downarrow$
+
+\texttt{Regroupement d'alias}
+
+$\downarrow$
+
+\texttt{Détection co-occurrences (fenêtre glissante)}
+
+$\downarrow$
+
+\texttt{Génération graphe NetworkX}
+
+$\downarrow$
+
+\texttt{Export (GraphML, CSV, visualisation)}
+\vspace{0.5em}
+\end{minipage}
+}
+\end{center}
+
+\vspace{1em}
+
+Le notebook \texttt{main.ipynb} orchestre l'ensemble du pipeline et permet une exécution interactive étape par étape.
+
+\subsection{Description des scripts Python}
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{@{}p{4.5cm}p{10cm}@{}}
+\toprule
+\textbf{Fichier} & \textbf{Rôle} \\
+\midrule
+\texttt{main.ipynb} & \textbf{Notebook principal} -- orchestre le pipeline complet : chargement des données, extraction NER, filtrage, alias, co-occurrences, génération et visualisation des graphes. Point d'entrée interactif du projet. \\
+\addlinespace
+\texttt{nlp\_main.py} & Script d'orchestration en ligne de commande. Appelle les modules dans l'ordre pour produire les listes L, LP, LL. \\
+\addlinespace
+\texttt{nlp\_extract\_characters.py} & Extraction des entités nommées avec spaCy. Fonctions \texttt{extract\_entities()}, \texttt{count\_entities()}, \texttt{filter\_persons()}, \texttt{filter\_locations()}. \\
+\addlinespace
+\texttt{nlp\_multi\_ner.py} & NER multi-modèles (spaCy + Stanza). Implémente la méthode de \textbf{vote} via \texttt{ensemble\_entities()} pour fusionner les résultats des différents modèles. \\
+\addlinespace
+\texttt{nlp\_aliases.py} & Regroupement d'alias : normalisation des noms, détection des variantes (ex: ``Hari'' $\rightarrow$ ``Hari Seldon''), fusion des comptages. \\
+\addlinespace
+\texttt{nlp\_cooccurrence.py} & Détection des co-occurrences entre personnages dans une fenêtre de mots configurable (\texttt{distance\_max}). \\
+\addlinespace
+\texttt{nlp\_graph.py} & Génération du graphe NetworkX, sauvegarde en GraphML, visualisation statique avec Matplotlib. \\
+\addlinespace
+\texttt{nlp\_visualize\_web.py} & Visualisation interactive du graphe en HTML avec PyVis. \\
+\addlinespace
+\texttt{nlp\_create\_submission.py} & Traitement par chapitre et génération du fichier \texttt{submission.csv} pour Kaggle. \\
+\addlinespace
+\texttt{nlp\_utils.py} & Fonctions utilitaires : lecture de fichiers, chargement de l'anti-dictionnaire. \\
+\bottomrule
+\end{tabular}
+\caption{Description des modules Python du projet}
+\end{table}
+
+\end{document}

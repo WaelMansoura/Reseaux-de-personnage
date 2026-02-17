@@ -1,0 +1,141 @@
+
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json: 
+ 438k/? [00:00<00:00, 20.0MB/s]
+
+INFO:stanza:Downloaded file to /root/stanza_resources/resources.json
+INFO:stanza:Downloading default packages for language: fr (French) ...
+
+Downloading https://huggingface.co/stanfordnlp/stanza-fr/resolve/v1.11.0/models/default.zip: 100%
+ 360M/360M [00:03<00:00, 97.0MB/s]
+
+INFO:stanza:Downloaded file to /root/stanza_resources/fr/default.zip
+INFO:stanza:Finished downloading models and saved to /root/stanza_resources
+INFO:stanza:Checking for updates to resources.json in case models have been updated.  Note: this behavior can be turned off with download_method=None or download_method=DownloadMethod.REUSE_RESOURCES
+
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json: 
+ 438k/? [00:00<00:00, 25.7MB/s]
+
+INFO:stanza:Downloaded file to /root/stanza_resources/resources.json
+WARNING:stanza:Language fr package default expects mwt, which has been added
+INFO:stanza:Loading these models for language: fr (French):
+==================================
+| Processor | Package            |
+----------------------------------
+| tokenize  | combined           |
+| mwt       | combined           |
+| ner       | wikinergold_charlm |
+==================================
+
+WARNING:stanza:GPU requested, but is not available!
+INFO:stanza:Using device: cpu
+INFO:stanza:Loading: tokenize
+INFO:stanza:Loading: mwt
+INFO:stanza:Loading: ner
+INFO:stanza:Done loading processors!
+
+✓ Loaded 97 patterns from Asimov gazetteer
+  - 24 characters (48 total variants)
+  - 11 locations (14 total variants)
+
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json: 
+ 438k/? [00:00<00:00, 21.3MB/s]
+
+INFO:stanza:Downloaded file to /root/stanza_resources/resources.json
+INFO:stanza:Downloading default packages for language: fr (French) ...
+INFO:stanza:File exists: /root/stanza_resources/fr/default.zip
+INFO:stanza:Finished downloading models and saved to /root/stanza_resources
+INFO:stanza:Checking for updates to resources.json in case models have been updated.  Note: this behavior can be turned off with download_method=None or download_method=DownloadMethod.REUSE_RESOURCES
+
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json: 
+ 438k/? [00:00<00:00, 24.0MB/s]
+
+INFO:stanza:Downloaded file to /root/stanza_resources/resources.json
+WARNING:stanza:Language fr package default expects mwt, which has been added
+INFO:stanza:Loading these models for language: fr (French):
+==================================
+| Processor | Package            |
+----------------------------------
+| tokenize  | combined           |
+| mwt       | combined           |
+| ner       | wikinergold_charlm |
+==================================
+
+WARNING:stanza:GPU requested, but is not available!
+INFO:stanza:Using device: cpu
+INFO:stanza:Loading: tokenize
+INFO:stanza:Loading: mwt
+INFO:stanza:Loading: ner
+INFO:stanza:Done loading processors!
+
+✓ Loaded 97 patterns from Asimov gazetteer
+  - 24 characters (48 total variants)
+  - 11 locations (14 total variants)
+
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json: 
+ 438k/? [00:00<00:00, 22.6MB/s]
+
+INFO:stanza:Downloaded file to /root/stanza_resources/resources.json
+INFO:stanza:Downloading default packages for language: fr (French) ...
+INFO:stanza:File exists: /root/stanza_resources/fr/default.zip
+INFO:stanza:Finished downloading models and saved to /root/stanza_resources
+INFO:stanza:Checking for updates to resources.json in case models have been updated.  Note: this behavior can be turned off with download_method=None or download_method=DownloadMethod.REUSE_RESOURCES
+
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json: 
+ 438k/? [00:00<00:00, 15.5MB/s]
+
+INFO:stanza:Downloaded file to /root/stanza_resources/resources.json
+WARNING:stanza:Language fr package default expects mwt, which has been added
+INFO:stanza:Loading these models for language: fr (French):
+==================================
+| Processor | Package            |
+----------------------------------
+| tokenize  | combined           |
+| mwt       | combined           |
+| ner       | wikinergold_charlm |
+==================================
+
+WARNING:stanza:GPU requested, but is not available!
+INFO:stanza:Using device: cpu
+INFO:stanza:Loading: tokenize
+INFO:stanza:Loading: mwt
+INFO:stanza:Loading: ner
+INFO:stanza:Done loading processors!
+
+✓ Loaded 97 patterns from Asimov gazetteer
+  - 24 characters (48 total variants)
+  - 11 locations (14 total variants)
+
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json: 
+ 438k/? [00:00<00:00, 22.4MB/s]
+
+INFO:stanza:Downloaded file to /root/stanza_resources/resources.json
+INFO:stanza:Downloading default packages for language: fr (French) ...
+INFO:stanza:File exists: /root/stanza_resources/fr/default.zip
+INFO:stanza:Finished downloading models and saved to /root/stanza_resources
+INFO:stanza:Checking for updates to resources.json in case models have been updated.  Note: this behavior can be turned off with download_method=None or download_method=DownloadMethod.REUSE_RESOURCES
+
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json: 
+ 438k/? [00:00<00:00, 17.5MB/s]
+
+INFO:stanza:Downloaded file to /root/stanza_resources/resources.json
+WARNING:stanza:Language fr package default expects mwt, which has been added
+INFO:stanza:Loading these models for language: fr (French):
+==================================
+| Processor | Package            |
+----------------------------------
+| tokenize  | combined           |
+| mwt       | combined           |
+| ner       | wikinergold_charlm |
+==================================
+
+WARNING:stanza:GPU requested, but is not available!
+INFO:stanza:Using device: cpu
+INFO:stanza:Loading: tokenize
+INFO:stanza:Loading: mwt
+INFO:stanza:Loading: ner
+INFO:stanza:Done loading processors!
+
+✓ Loaded 97 patterns from Asimov gazetteer
+  - 24 characters (48 total variants)
+  - 11 locations (14 total variants)
+
