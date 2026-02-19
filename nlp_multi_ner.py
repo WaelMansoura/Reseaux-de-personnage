@@ -4,6 +4,14 @@ from collections import Counter, defaultdict
 import re
 from pathlib import Path
 
+try:
+    from flair.nn import Classifier
+    from flair.data import Sentence as FlairSentence
+    _FLAIR_AVAILABLE = True
+except ImportError:
+    _FLAIR_AVAILABLE = False
+    print("⚠️  flair not installed. Run: pip install flair")
+
 # =============================================================================
 # ASIMOV FOUNDATION GAZETTEER (Enhanced character/location recognition)
 # =============================================================================
@@ -66,6 +74,7 @@ ASIMOV_LOCATIONS = {
 
 _spacy_nlp = None
 _stanza_nlp = None
+_flair_tagger = None
 _models_initialized = False
 
 def get_spacy_model():
@@ -115,6 +124,26 @@ def get_stanza_model():
         print("✅ Stanza model loaded!")
     
     return _stanza_nlp
+
+
+def get_flair_model():
+    """
+    Lazy load Flair French NER tagger.
+    Uses 'fr-ner' (BiLSTM-CRF, French-specific, no sentencepiece dependency).
+    Model auto-downloads to ~/.flair/ on first call (~450 MB, one-time).
+    Labels: PER, LOC, ORG, MISC — identical to spaCy/Stanza.
+    """
+    global _flair_tagger
+
+    if not _FLAIR_AVAILABLE:
+        raise ImportError("flair is not installed. Run: pip install flair")
+
+    if _flair_tagger is None:
+        print("🔄 Loading Flair NER model (fr-ner)...")
+        _flair_tagger = Classifier.load("fr-ner")
+        print("✅ Flair model loaded!")
+
+    return _flair_tagger
 
 
 # ---------------------------------------
@@ -218,48 +247,118 @@ def extract_stanza(text):
     return ents
 
 
+def _chunk_text(text, max_chars=900):
+    """
+    Split text into chunks safe for Flair's BiLSTM sequence model (~250 tokens).
+    Splits on double-newline paragraph breaks first, then falls back to
+    sentence-ending punctuation. max_chars=900 ≈ 150-200 tokens (safe margin).
+    """
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    chunks = []
+    current = ""
+    for para in paragraphs:
+        if len(current) + len(para) + 2 <= max_chars:
+            current = (current + "\n\n" + para).strip()
+        else:
+            if current:
+                chunks.append(current)
+            if len(para) > max_chars:
+                # Split long paragraph by sentence boundaries
+                sentences = re.split(r'(?<=[.!?])\s+', para)
+                sub = ""
+                for sent in sentences:
+                    if len(sub) + len(sent) + 1 <= max_chars:
+                        sub = (sub + " " + sent).strip()
+                    else:
+                        if sub:
+                            chunks.append(sub)
+                        sub = sent
+                if sub:
+                    chunks.append(sub)
+            else:
+                current = para
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def extract_flair(text):
+    """
+    Extract entities using Flair fr-ner with lazy loading.
+    Handles long texts by chunking on paragraph/sentence boundaries.
+    Labels: PER, LOC, ORG, MISC — same as spaCy/Stanza, no remapping needed.
+    """
+    tagger = get_flair_model()
+    ents = []
+    for chunk in _chunk_text(text):
+        sentence = FlairSentence(chunk)
+        tagger.predict(sentence)
+        for span in sentence.get_spans("ner"):
+            word = normalize_span(span.text)
+            if word:
+                ents.append((word, span.tag))
+    return ents
+
+
 # ---------------------------------------
 # Ensemble Logic
 # ---------------------------------------
-def ensemble_entities(text, method="vote"):
+def ensemble_entities(text, method="vote", use_flair=True):
     """
-    method:
-        - union → keep all entities
-        - intersection → only keep those found by both models
-        - vote → keep if both models agree
-    """
+    Combine NER predictions from spaCy, Stanza, and (optionally) Flair.
 
+    method:
+        - union        → keep any entity found by ≥1 model
+        - intersection → keep only entities found by ALL active models
+        - vote         → keep entities found by ≥2 models (majority vote)
+
+    use_flair:
+        If True (default) and flair is installed, Flair fr-ner is used as
+        a third voter. Falls back silently to 2-model ensemble if unavailable.
+    """
     spa = extract_spacy(text)
     sta = extract_stanza(text)
 
     all_entities = {
         "spacy": spa,
-        "stanza": sta
+        "stanza": sta,
     }
 
-    # Map: entity_text → {labels...}
-    counter = defaultdict(lambda: defaultdict(int))
+    if use_flair and _FLAIR_AVAILABLE:
+        try:
+            fla = extract_flair(text)
+            all_entities["flair"] = fla
+        except Exception as e:
+            print(f"⚠️  Flair extraction failed, falling back to 2-model ensemble: {e}")
 
+    n_models = len(all_entities)
+    vote_threshold = 2  # true majority for both 2-model and 3-model setups
+
+    # Map: entity_text → {label → vote count}
+    # Deduplicate per model so one model cannot double-vote the same entity
+    counter = defaultdict(lambda: defaultdict(int))
     for model_name, ents in all_entities.items():
-        for text, label in ents:
-            counter[text][label] += 1
+        seen = set()
+        for entity_text, label in ents:
+            key = (entity_text, label)
+            if key not in seen:
+                counter[entity_text][label] += 1
+                seen.add(key)
 
     final = []
-
-    for text, label_map in counter.items():
-        # Find majority label
+    for entity_text, label_map in counter.items():
         best_label = max(label_map, key=lambda k: label_map[k])
-        votes = label_map[best_label]
+        votes = sum(label_map.values())
 
         if method == "union":
-            final.append((text, best_label))
+            final.append((entity_text, best_label))
 
         elif method == "intersection":
-            if votes == 2:
-                final.append((text, best_label))
+            if votes == n_models:  # all active models agree
+                final.append((entity_text, best_label))
 
         elif method == "vote":
-            if votes >= 2:
-                final.append((text, best_label))
+            if votes >= vote_threshold:  # ≥2 models agree
+                final.append((entity_text, best_label))
 
     return final
