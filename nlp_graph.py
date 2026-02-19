@@ -25,6 +25,25 @@ def generate_graph(cooccurrences, character_counts):
     
     return G
 
+
+def remove_isolated_nodes(G):
+    """
+    Remove nodes with no edges (degree == 0) from the graph in-place.
+    These are characters detected by NER that never co-appear with anyone
+    in the co-occurrence window, so they contribute no useful information
+    to the character network.
+
+    Args:
+        G (nx.Graph): Network graph (modified in-place)
+
+    Returns:
+        nx.Graph: Same graph with isolated nodes removed
+    """
+    isolated = list(nx.isolates(G))
+    G.remove_nodes_from(isolated)
+    return G
+
+
 def save_graphml(G, filename):
     """Save graph in GraphML format."""
     nx.write_graphml(G, filename)
