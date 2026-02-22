@@ -222,6 +222,34 @@ def alias_dictionary(groups: list) -> dict:
     return alias_map
 
 
+def apply_manual_aliases(alias_map: dict, manual_overrides: dict) -> dict:
+    """
+    Overlay a small set of hand-crafted aliases on top of an auto-generated
+    alias_map.  Manual overrides always win.
+
+    For every (surface, canonical) in manual_overrides:
+    - surface is remapped to canonical.
+    - Any entry in alias_map that previously pointed to surface is also
+      redirected to canonical (transitive fix).
+
+    Args:
+        alias_map:        {surface: auto_canonical} from alias_dictionary()
+        manual_overrides: {surface: desired_canonical}
+
+    Returns:
+        dict: patched alias map
+    """
+    patched = dict(alias_map)
+    for surface, manual_canonical in manual_overrides.items():
+        old_canonical = patched.get(surface, surface)
+        patched[surface] = manual_canonical
+        if old_canonical != manual_canonical:
+            for k in list(patched):
+                if patched[k] == old_canonical:
+                    patched[k] = manual_canonical
+    return patched
+
+
 def merge_alias_counts(LP: Counter, alias_map: dict) -> Counter:
     """
     Merge counts of all alias forms into their canonical name.

@@ -1,28 +1,43 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
-def generate_graph(cooccurrences, character_counts):
+def generate_graph(cooccurrences, character_counts, alias_map=None):
     """
     Generate a NetworkX graph from co-occurrences.
-    
+
     Args:
         cooccurrences (Counter): Character pair co-occurrences
         character_counts (Counter): Character mention counts
-    
+        alias_map (dict): Optional {surface: canonical} mapping used to
+                          populate the required `names` node attribute.
+                          When provided every surface form that maps to a
+                          canonical node is listed in that node's `names`.
+
     Returns:
-        nx.Graph: Network graph
+        nx.Graph: Network graph where every node has a `names` attribute
+                  (semicolon-separated list of character name variants).
     """
     G = nx.Graph()
-    
-    # Add nodes with size based on mention count
+
+    # Build reverse map: canonical -> sorted list of all surface forms
+    canonical_to_surfaces: dict[str, list[str]] = {}
+    if alias_map:
+        for surface, canonical in alias_map.items():
+            canonical_to_surfaces.setdefault(canonical, []).append(surface)
+
+    # Add nodes with count + names attribute
     for character, count in character_counts.items():
         G.add_node(character, count=count)
-    
+        surfaces = canonical_to_surfaces.get(character, [])
+        # Always include the canonical name itself, deduplicate, keep order
+        all_names = [character] + [s for s in surfaces if s != character]
+        G.nodes[character]["names"] = ";".join(all_names)
+
     # Add edges with weight based on co-occurrence
     for (char1, char2), weight in cooccurrences.items():
         if char1 in G.nodes and char2 in G.nodes:
             G.add_edge(char1, char2, weight=weight)
-    
+
     return G
 
 
