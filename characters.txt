@@ -8,6 +8,48 @@ Salvor Hardin
 Salvor
 Hardin
 
+# Prelude to Foundation — secondary characters
+Marron
+Grisnuage
+Endor Levanian
+Levanian
+Mycélium
+Hano Lindor
+Lindor
+Lanel Russ
+Russ
+Gebore Astinwald
+Astinwald
+Emmer Thalus
+Thalus
+Mannix
+Davan
+Rachelle
+Rittah
+Casilia
+Tisalver
+Clowzia
+Leggen
+Maître-du-Soleil Quatorze
+Quatorze
+Hano
+Lanel
+Gebore
+Emmer
+Jenarr
+Jennisek
+Jennat
+Lisung Randa
+Randa
+Lisung
+Bendar
+Benastra
+Bigell
+Jirad
+Wendome
+Poldark
+Marbie
+
 # Foundation
 Hober Mallow
 Mallow
@@ -107,3 +149,29 @@ Jael
 Turbor
 Theo Turbor
 Lizalor
+
+# Caves of Steel — secondary characters
+Dr Sarton
+Sarton
+R. Sammy
+Philip Norris
+Norris
+Clousarr
+Gerrigel
+Vincent Barrett
+Barrett
+Elie
+Jézabel
+
+# Caves of Steel — additional characters
+Roj Nemennuh
+Nemennuh
+Pierre Jacques
+Paul Gerhard
+Joseph Klemin
+Klemin
+Simpson
+Elisabeth
+Lizzy
+Boris
+Myers

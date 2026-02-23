@@ -1,9 +1,10 @@
 Character Relationship Labeling: Research and Implementation Plan
-Part 1 — Research Report
+
+# Part 1 — Research Report
 
 We consider six approaches for classifying a French literary character pair’s relationship (“friendly” / “hostile” / “neutral”):
 
-1. Zero-shot classification with multilingual NLI
+## 1. Zero-shot classification with multilingual NLI
 
 How it works: We use an off-the-shelf Natural Language Inference model (trained on XNLI or similar) to perform zero-shot text classification. In practice, we present the snippet as a “premise” and candidate relationship statements (e.g. “Cette relation est amicale”, “est hostile”, “est neutre”) as “hypotheses.” The NLI model then scores entailment/contradiction for each hypothesis, effectively ranking the labels. HuggingFace’s pipeline("zero-shot-classification") automates this. For example, MoritzLaurer’s mDeBERTa-v3 (fine-tuned on XNLI) supports French and 100+ languages. Similarly, French-specific NLI models exist (e.g. DistilCamemBERT-NLI). We would feed each snippet and the label set {“friendly”, “hostile”, “neutral”} (or French equivalents) to the pipeline.
 
@@ -13,7 +14,7 @@ How it works: We use an off-the-shelf Natural Language Inference model (trained 
 
     Failure modes: NLI models may misinterpret context or pick up spurious cues. For example, if the text contains negative words (“meurtre”, “haïr”), it may label “hostile” even if the relationship is friendly in context. Ambiguous or subtle interactions may be hard to classify. Also, these models assume the snippet indeed expresses a relationship assertion; neutral/shared context could get misclassified. They are also sensitive to label wording (e.g. “amicale” vs “amicaux”), so label choice matters.
 
-2. Sentiment / Tone Analysis on the context window
+## 2. Sentiment / Tone Analysis on the context window
 
 How it works: We compute the sentiment of the snippet around the two characters and map polarity to relationship: positive sentiment ⇒ friendly, negative ⇒ hostile, near-zero ⇒ neutral. For example, use a French sentiment model (like DistilCamemBERT-Sentiment) or a lexicon (FEEL or LIWC). One could simply run pipeline("sentiment-analysis") on the snippet and interpret “POS” vs “NEG”.
 
@@ -23,7 +24,7 @@ How it works: We compute the sentiment of the snippet around the two characters 
 
     Failure modes: Sentiment ≠ relationship. Two characters could speak harshly about a third party (negative sentiment) but still be friendly to each other. Conversely, a neutral description (no sentiment words) doesn’t imply a neutral relationship. Polite hostility (sarcasm) or complex dialogue can fool sentiment. In short, sentiment is a noisy proxy: it may label all negative-content windows as “hostile” even if the characters’ dynamic is more complex.
 
-3. Prompted LLM classification (zero/few-shot)
+## 3. Prompted LLM classification (zero/few-shot)
 
 How it works: We ask a large language model to read the snippet and answer: “Given the excerpt, are X and Y friendly, hostile, or neutral?” This can be done with an API (GPT-4, GPT-3.5, Mistral-7B) or a local model via llama.cpp (e.g. Llama 2 / Mistral-7B instruction-tuned). The prompt includes the snippet and possibly a few examples (few-shot). The model then generates the label. E.g.:
 
@@ -35,7 +36,7 @@ Prompt: "Texte: [snippet]\nQuestion: Quel est le type de relation entre Alice et
 
     Failure modes: LLMs may hallucinate or give inconsistent labels if the prompt is ambiguous. They may also be overly verbose or add justification. Without careful prompt engineering, answers could vary. There’s also a risk of leaking context or bias – e.g. expecting “Bob” to be male affects “mentor” vs “authority”. Reliability without fine-tuning or supervision is uncertain, though scoring can be gleaned via log probabilities. Determinism is an issue – outputs must be cached.
 
-4. Dependency-based heuristic rules
+## 4. Dependency-based heuristic rules
 
 How it works: Parse each snippet with a French parser (spaCy or Stanza) to get grammatical relations. Then apply hand-crafted patterns: e.g. if X is subject and Y object of verb “aimer” (“X loves Y”), label friendly. If verb like “battre, haïr, tuer” connects them, label hostile. Adjectives or nouns directly modifying a character (e.g. “gardien”), or appositions (“Alice, son amie d’enfance”), can signal relations. We could also count positive/negative adjectives on each name. Essentially, we build lexicons of verbs/adjectives for friendly vs hostile and check if characters fill positive vs negative semantic roles.
 
@@ -45,7 +46,7 @@ How it works: Parse each snippet with a French parser (spaCy or Stanza) to get g
 
     Failure modes: Extremely incomplete coverage. Many relationships are not explicitly verbalized (e.g. characters are friends implied by context, not direct dialogue). Also French syntax is flexible; subject-object patterns can be scrambled. Negation and idioms complicate rule matching. Risk of gross mislabeling if a pattern is too general (e.g. any occurrence of “respecter” might indicate positive but could be neutral context).
 
-5. Fine-tuned transformer
+## 5. Fine-tuned transformer
 
 How it works: We would fine-tune a pre-trained French (CamemBERT) or multilingual model (XLM-R) on labeled examples of snippet→relationship. This could be done with a few-shot approach (PEFT/LoRA) if we had even a small annotated set. In theory, unsupervised techniques (like this paper’s dynamic latent model) could also cluster relationship types beyond sentiment.
 
@@ -55,7 +56,7 @@ How it works: We would fine-tune a pre-trained French (CamemBERT) or multilingua
 
     Failure modes: Overfitting on tiny hand-labeled set; inability to generalize. Also unbalanced classes (we might have many neutral contexts and few hostile examples). If no labels, this approach is moot.
 
-6. Aggregation strategy (window → edge-level)
+## 6. Aggregation strategy (window → edge-level)
 
 How it works: Each character pair often co-occurs in multiple overlapping windows. We need to combine those snippet-level labels into one final edge_type. Simple options: majority vote of labels; choose label with highest confidence aggregate; or weighted vote (e.g. weight recent mentions more). Another idea: if any snippet is strongly hostile, label the edge hostile (to catch conflict even if most context is neutral). Or average an underlying sentiment score across snippets.
 
@@ -66,11 +67,12 @@ How it works: Each character pair often co-occurs in multiple overlapping window
     Failure modes: If snippets give mixed signals, majority vote might flatten nuance (a relationship that is mostly friendly but briefly hostile would be labeled “friendly”). Also, if a pair only co-occurs once, aggregation does nothing. Weighted schemes introduce hyperparameters.
 
 Recommendation: Given our constraints (French text, no labels, small data, CPU-only), the strongest yet practical approach is Zero-shot NLI (Approach 1), possibly supplemented by simple heuristics (Approach 4) to catch obvious cases. Multilingual NLI models (MoritzLaurer, DistilCamemBERT-NLI) provide a ready way to classify each snippet by embedding-based reasoning. They require no training data and have good French support. We should pair this with a clear aggregation rule (majority vote). If time allows, a basic sentiment check (Approach 2) could serve as a secondary signal (e.g. to break ties), and we can write a few dependency-based rules for glaring patterns (like X aime Y). Prompted LLMs are promising but impractical on CPU and costly to iterate. Fine-tuning is ruled out without data. Thus: Use a zero-shot transformer (multilingual NLI or French NLI) as the core, ensuring caching of results. This balances performance (entailment models have shown strong zero-shot capabilities) and feasibility. We will implement this first.
-Part 2 — Implementation Plan
+
+# Part 2 — Implementation Plan
 
 Based on the above, we recommend building new functions around a zero-shot NLI classifier. Here is a step-by-step plan:
 
-1. Context Extraction
+## 1. Context Extraction
 
 For each co-occurrence pair, extract the text snippets containing both names. For example, take the minimal token span around each co-occurrence (up to distance_max tokens). Pseudocode:
 
@@ -96,7 +98,7 @@ def extract_cooccurrence_contexts(text, charA, charB, alias_map, distance_max):
 
 This returns a list of snippet strings for all windows where A and B appear within distance_max. We might shorten very long snippets or join multiple occurrences, but the above covers the basic logic.
 
-2. Labeling Function
+## 2. Labeling Function
 
 Load a zero-shot classifier once (lazy singleton) and apply it to each snippet, then aggregate. Pseudocode using HuggingFace pipeline:
 
@@ -147,7 +149,7 @@ Key points:
 
     Error handling: if the pipeline call fails (e.g. OOM), catch and default to “neutral”.
 
-3. Aggregation Strategy
+## 3. Aggregation Strategy
 
 A simple majority-vote aggregator (ties broken arbitrarily or by preferring hostile if any strong evidence). For example:
 
@@ -165,48 +167,50 @@ def aggregate_labels(labels: list[str]) -> str:
     return counts.most_common(1)[0][0]
 ```
 
-This returns the most frequent label among snippets. In case of ties (e.g. ["friendly","hostile"]), it picks one arbitrarily (the one encountered first). We could refine by checking confidence scores or using a fixed priority (e.g. hostile > friendly > neutral if ambiguous). 4. Code Integration
+This returns the most frequent label among snippets. In case of ties (e.g. ["friendly","hostile"]), it picks one arbitrarily (the one encountered first). We could refine by checking confidence scores or using a fixed priority (e.g. hostile > friendly > neutral if ambiguous).
 
-    New Module: Create nlp_relation.py to hold the above functions (extract_cooccurrence_contexts, classify_relationship, aggregate_labels, plus any model-loading code). This keeps relationship logic separate.
+## 4. Code Integration
 
-    In nlp_cooccurrence.py or similar: After detecting cooccurrences, call a function label_relationships(text, cooccurrences, alias_map) which loops over each pair (charA, charB):
+New Module: Create nlp_relation.py to hold the above functions (extract_cooccurrence_contexts, classify_relationship, aggregate_labels, plus any model-loading code). This keeps relationship logic separate.
 
-    ```python
-    edge_labels = {}
-    for (charA, charB), count in cooccurrences.items():
-        contexts = extract_cooccurrence_contexts(text, charA, charB, alias_map, distance_max)
-        label = classify_relationship(contexts, charA, charB)
-        edge_labels[(charA, charB)] = label
-    ```
+In nlp_cooccurrence.py or similar: After detecting cooccurrences, call a function label_relationships(text, cooccurrences, alias_map) which loops over each pair (charA, charB):
 
-    Modify nlp_graph.py::generate_graph(): Add a new parameter edge_labels (default None). When adding edges, if edge_labels[(u,v)] exists, set G[u][v]['edge_type'] = edge_labels[(u,v)]. For example:
+```python
+edge_labels = {}
+for (charA, charB), count in cooccurrences.items():
+    contexts = extract_cooccurrence_contexts(text, charA, charB, alias_map, distance_max)
+    label = classify_relationship(contexts, charA, charB)
+    edge_labels[(charA, charB)] = label
+```
 
-    ```python
-    def generate_graph(cooccurrences, LP_merged, alias_map, edge_labels=None):
-    G = nx.Graph()
-    # ... existing node logic ...
-    for (charA, charB), weight in cooccurrences.items():
-        G.add_edge(charA, charB, weight=weight)
-        if edge_labels:
-            label = edge_labels.get((charA,charB)) or edge_labels.get((charB,charA))
-            if label:
-                G[charA][charB]['edge_type'] = label
-    return G
-    ```
+Modify nlp_graph.py::generate_graph(): Add a new parameter edge_labels (default None). When adding edges, if edge_labels[(u,v)] exists, set G[u][v]['edge_type'] = edge_labels[(u,v)]. For example:
 
-    Update calls in nlp_create_submission.py: originally G = generate_graph(cooccurrences, LP_merged, alias_map), change to include edge_labels.
+```python
+def generate_graph(cooccurrences, LP_merged, alias_map, edge_labels=None):
+G = nx.Graph()
+# ... existing node logic ...
+for (charA, charB), weight in cooccurrences.items():
+    G.add_edge(charA, charB, weight=weight)
+    if edge_labels:
+        label = edge_labels.get((charA,charB)) or edge_labels.get((charB,charA))
+        if label:
+            G[charA][charB]['edge_type'] = label
+return G
+```
 
-    Notebook changes: In Section 4 of new.ipynb, before building the graph, insert the labeling step. For example:
+Update calls in nlp_create_submission.py: originally G = generate_graph(cooccurrences, LP_merged, alias_map), change to include edge_labels.
 
-    ```python
-    cooccurrences = detect_cooccurrences(text, LP_merged, distance_max)
-    edge_labels = label_relationships(text, cooccurrences, alias_map)
-    G = generate_graph(cooccurrences, LP_merged, alias_map=alias_map, edge_labels=edge_labels)
-    ```
+Notebook changes: In Section 4 of new.ipynb, before building the graph, insert the labeling step. For example:
 
-    Ensure the edge_type attribute is written into GraphML. The Kaggle submission generator will automatically include it in the <graphml> output since generate_graph now added it.
+```python
+cooccurrences = detect_cooccurrences(text, LP_merged, distance_max)
+edge_labels = label_relationships(text, cooccurrences, alias_map)
+G = generate_graph(cooccurrences, LP_merged, alias_map=alias_map, edge_labels=edge_labels)
+```
 
-5. Caching / Performance
+Ensure the edge_type attribute is written into GraphML. The Kaggle submission generator will automatically include it in the <graphml> output since generate_graph now added it.
+
+## 5. Caching / Performance
 
 To avoid re-running expensive inference:
 
@@ -218,7 +222,7 @@ To avoid re-running expensive inference:
 
     Reproducibility: Use deterministic pipeline parameters (use_auth_token fixed, no randomness) and save all outputs. Also, set any seeds if needed (though pipeline is usually deterministic for inference).
 
-6. Manual Validation
+## 6. Manual Validation
 
 Without ground truth, we do spot checks:
 
@@ -232,7 +236,8 @@ Without ground truth, we do spot checks:
 
     In code, we might produce a debug output (on demand) that shows (charA, charB): label along with one snippet (or all snippets) that decided it, to eyeball reasonableness.
 
-Part 3 — Taxonomy Expansion Discussion
+# Part 3 — Taxonomy Expansion Discussion
+
 Richer Relationship Taxonomies
 
 Literature often defines many more relationship types than just friendly/hostile/neutral. In literary NLP, common categories include friend, lover/romantic partner, family (parent/child, siblings), mentor/mentee, rival, enemy, colleague, leader/subordinate, ally, protector/protected, member_of (group), etc. For example, an annotated fiction relations ontology lists labels like friend_of, lover_of, rival_of, enemy_of, mentor_of, teacher_of, protector_of, etc.. Another study notes that real relationships in narratives involve facets like family or romance, not just positive/negative sentiment. Standard ontologies (e.g. SEMNLP schemas) often mix familial ties (parent, spouse) and social roles (leader, member) alongside affective categories (friend, enemy). There is no single universal taxonomy, but these examples show how a graph’s edges could eventually carry more precise labels.
@@ -247,7 +252,3 @@ Multi-label Relationships
 Characters can have multiple relationship facets (e.g. one might be both leader_of and ally of another). Supporting multi-label edges is possible but complicates output. If we allow multiple labels, the GraphML edge could store a list (e.g. "ally;leader"). However, GraphML typically expects atomic values; we could encode this as a semicolon-separated string or use multiple <data> fields (not standard). In practice, it may be simpler to choose the most defining label or adopt a hierarchy (e.g. always include "mentor_of" even if also "ally"). If multi-label is used, our pipeline must output all applicable labels. This might involve running separate classifiers or spotting multiple patterns. GraphML output would then have to store either an array or concatenated string. One pragmatic approach: allow one primary label (edge_type) and, if needed, introduce secondary attributes (e.g. edge_role="ally"; edge_role2="leader") or multiple edges (NetworkX MultiGraph) – but that breaks the submission format. Given the Kaggle format, it’s safer to stick to one label per edge for now, or encode multiple roles in one string. A future version could output something like "friendly (mentor)" or a combined category.
 
 Sources: Prior work on fictional relationship extraction describes rich label sets (e.g. friend_of, lover_of, mentor_of, protector_of, etc.) and notes that real relationships have many facets (romance, family, etc.) beyond simple sentiment. Our plan will initially target the 3-class schema, with an eye toward expanding categories once we have a working system and possibly some manual labels to calibrate finer distinctions.
-
-```
-
-```

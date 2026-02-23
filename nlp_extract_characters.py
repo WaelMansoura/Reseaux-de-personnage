@@ -84,6 +84,12 @@ def filter_locations(L):
 
     return locations
 
+# Short names that are legitimate Asimov character aliases — do not filter
+_SHORT_NAME_WHITELIST = {
+    "Pel", "Bay", "Ben", "Bel", "Eto", "Kal",
+}
+
+
 def is_valid_entity(text: str):
     """
     Common filtering rules for PERSON and LOCATION entities.
@@ -92,6 +98,7 @@ def is_valid_entity(text: str):
     - Reject ALL CAPS (ACRONYMS)
     - Reject names with hyphens
     - Reject 1-character entities
+    - Reject 2-character entities (unless whitelisted)
     - Reject empty / whitespace-only
     """
 
@@ -103,6 +110,11 @@ def is_valid_entity(text: str):
 
     # Reject single character (e.g. "A", "X", "B")
     if len(t) == 1:
+        return False
+
+    # Reject 2-character tokens (likely not real names: "Or", "Eh", ...)
+    # unless they're known short aliases
+    if len(t) == 2 and t not in _SHORT_NAME_WHITELIST:
         return False
 
     # Reject ALL CAPS (ACRONYMS: "ONU", "USA", "GNA")
