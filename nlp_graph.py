@@ -1,7 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
-def generate_graph(cooccurrences, character_counts, alias_map=None):
+def generate_graph(cooccurrences, character_counts, alias_map=None, edge_labels=None):
     """
     Generate a NetworkX graph from co-occurrences.
 
@@ -12,10 +12,16 @@ def generate_graph(cooccurrences, character_counts, alias_map=None):
                           populate the required `names` node attribute.
                           When provided every surface form that maps to a
                           canonical node is listed in that node's `names`.
+        edge_labels (dict): Optional {(charA, charB): edge_type_str} from
+                            nlp_relation.label_relationships().  When provided,
+                            each edge gains an `edge_type` GraphML attribute
+                            ("friendly" | "hostile" | "neutral").
 
     Returns:
         nx.Graph: Network graph where every node has a `names` attribute
                   (semicolon-separated list of character name variants).
+                  Edges have a `weight` attribute and, if edge_labels is
+                  provided, an `edge_type` attribute.
     """
     G = nx.Graph()
 
@@ -33,10 +39,17 @@ def generate_graph(cooccurrences, character_counts, alias_map=None):
         all_names = [character] + [s for s in surfaces if s != character]
         G.nodes[character]["names"] = ";".join(all_names)
 
-    # Add edges with weight based on co-occurrence
+    # Add edges with weight based on co-occurrence; optionally tag with edge_type
     for (char1, char2), weight in cooccurrences.items():
         if char1 in G.nodes and char2 in G.nodes:
             G.add_edge(char1, char2, weight=weight)
+            if edge_labels:
+                etype = (
+                    edge_labels.get((char1, char2))
+                    or edge_labels.get((char2, char1))
+                    or "neutral"
+                )
+                G[char1][char2]["edge_type"] = etype
 
     return G
 
