@@ -15,6 +15,8 @@ import re
 from collections import Counter
 from pathlib import Path
 
+MIN_CAP_FREQ = 2  # Minimum occurrences to keep a capitalization-heuristic name
+
 # =============================================================================
 # ASIMOV GAZETTEER — same data as nlp_multi_ner.py, kept here to avoid
 # importing the AI-dependent module
@@ -586,13 +588,63 @@ def _title_regex_scan(text: str) -> list[tuple[str, str]]:
 
 
 # =============================================================================
+# DYNAMIC BLOCKLIST GENERATOR
+# =============================================================================
+
+def precompute_dynamic_blocklist(texts: list[str], cap_ratio_threshold: float = 0.70, min_count: int = 5) -> set:
+    """
+    Identifies common capitalized non-names automatically from the corpus.
+    Builds a list of words where the capitalization ratio is >= cap_ratio_threshold 
+    and total occurrences >= min_count.
+    Excludes known names from ASIMOV_CHARACTERS and ASIMOV_LOCATIONS.
+    """
+    cap_counts = Counter()
+    lower_counts = Counter()
+    
+    # Tokenize words using basic regex
+    word_pattern = re.compile(r'\b[A-Za-zÀ-ÿ]+\b')
+    for text in texts:
+        for match in word_pattern.finditer(text):
+            word = match.group()
+            if word.istitle():
+                cap_counts[word.lower()] += 1
+            elif word.islower():
+                lower_counts[word.lower()] += 1
+                
+    # Gather known gazetteer words to exclude (canonical names + aliases).
+    known_names = set()
+    gazetteer_forms = []
+    for canonical, aliases in ASIMOV_CHARACTERS.items():
+        gazetteer_forms.append(canonical)
+        gazetteer_forms.extend(aliases)
+    for canonical, aliases in ASIMOV_LOCATIONS.items():
+        gazetteer_forms.append(canonical)
+        gazetteer_forms.extend(aliases)
+
+    for form in gazetteer_forms:
+        for token in re.findall(r"\b[A-Za-zÀ-ÿ]+\b", form.lower()):
+            known_names.add(token)
+        
+    blocklist = set()
+    for word in set(cap_counts.keys()).union(lower_counts.keys()):
+        if word in known_names:
+            continue
+            
+        total = cap_counts[word] + lower_counts[word]
+        if total >= min_count and (cap_counts[word] / total) >= cap_ratio_threshold:
+            blocklist.add(word)
+            
+    return blocklist
+
+# =============================================================================
 # MAIN ENTRY POINT
 # =============================================================================
 
 def manual_extract_entities(text: str,
                             character_file: str = "characters.txt",
                             anti_dict: set | None = None,
-                            include_locations: bool = False
+                            include_locations: bool = False,
+                            dynamic_blocklist: set | None = None
                             ) -> list[tuple[str, str]]:
     """
     Rule-based NER — no AI models.
@@ -600,6 +652,8 @@ def manual_extract_entities(text: str,
     Combines three strategies:
       1. Gazetteer lookup (known Asimov character names)
       2. Capitalization heuristics (unknown proper nouns mid-sentence)
+         Filters out heuristic-only names that do not appear at least 
+         MIN_CAP_FREQ times, ensuring a cleaner baseline.
       3. Regex patterns (titled names, robot convention)
 
     Parameters
@@ -612,6 +666,8 @@ def manual_extract_entities(text: str,
         Set of lowercase stopwords to exclude from heuristic matches.
     include_locations : bool
         If True, also detect locations from ASIMOV_LOCATIONS.
+    dynamic_blocklist : set or None
+        Set of dynamic stopwords correctly identified from the corpus.
 
     Returns
     -------
@@ -619,6 +675,13 @@ def manual_extract_entities(text: str,
         List of (surface_form, label) tuples — same format as
         ensemble_entities() for full compatibility with downstream code.
     """
+    if dynamic_blocklist:
+        if anti_dict is None:
+            anti_dict = set()
+        else:
+            anti_dict = set(anti_dict)
+        anti_dict.update({w.lower() for w in dynamic_blocklist})
+
     # Build gazetteer
     gazetteer = build_gazetteer(character_file, include_locations=include_locations)
     known_names = {name for name, _label in gazetteer}
@@ -633,7 +696,13 @@ def manual_extract_entities(text: str,
     # Add names found by regex to known set for deduplication
     regex_names = {name for name, _label in regex_results}
     all_known = known_names | regex_names
+    
     cap_results = _capitalization_scan(text, anti_dict=anti_dict, known_names=all_known)
+
+    # Filter out purely heuristic names that do not appear MIN_CAP_FREQ times
+    cap_counts = Counter(name for name, _ in cap_results)
+    cap_results = [(name, label) for name, label in cap_results 
+                   if cap_counts[name] >= MIN_CAP_FREQ]
 
     # Combine all results
     all_entities = gaz_results + regex_results + cap_results

@@ -1,6 +1,7 @@
 import re
 from collections import Counter
 from itertools import combinations
+from bisect import bisect_left
 
 def detect_cooccurrences(text, character_counts, distance_max=25):
     """
@@ -46,6 +47,10 @@ def detect_cooccurrences(text, character_counts, distance_max=25):
 
         char_positions[name_str] = positions
 
+    # Sort positions for binary search optimization
+    for char in char_positions:
+        char_positions[char].sort()
+
     # --- sliding window co-occurrence ---
     cooccurrences = Counter()
 
@@ -56,8 +61,10 @@ def detect_cooccurrences(text, character_counts, distance_max=25):
         present_chars = []
 
         for char, positions in char_positions.items():
-            # check if any occurrence is inside window
-            if any(window_start <= p <= window_end for p in positions):
+            # Use binary search (bisect) to quickly check if any position falls within the window.
+            # This changes lookup from O(N) to O(log N) where N is number of occurrences.
+            idx = bisect_left(positions, window_start)
+            if idx < len(positions) and positions[idx] <= window_end:
                 present_chars.append(char)
 
         # count all pairs inside window
