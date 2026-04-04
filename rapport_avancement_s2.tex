@@ -1,0 +1,719 @@
+\documentclass[a4paper,11pt]{article}
+
+% ── Encoding & Language ───────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+% ── Layout ────────────────────────────────────────────────────────────────────
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{parskip}
+\usepackage{setspace}
+
+% ── Typography ────────────────────────────────────────────────────────────────
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ── Colours ───────────────────────────────────────────────────────────────────
+\usepackage{xcolor}
+\definecolor{mainblue}{HTML}{1a2c42}
+\definecolor{accentblue}{HTML}{2980b9}
+\definecolor{lightblue}{HTML}{d6eaf8}
+\definecolor{done}{HTML}{1e8449}
+\definecolor{inprog}{HTML}{d35400}
+\definecolor{nottodo}{HTML}{922b21}
+\definecolor{rowdone}{HTML}{d5f5e3}
+\definecolor{rowinprog}{HTML}{fdebd0}
+\definecolor{rownot}{HTML}{fadbd8}
+\definecolor{rowgray}{HTML}{f0f3f4}
+\definecolor{friendly}{HTML}{1e8449}
+\definecolor{hostile}{HTML}{922b21}
+\definecolor{neutral}{HTML}{626567}
+
+% ── Tables ────────────────────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{multirow}
+
+% ── Graphics & Diagrams ───────────────────────────────────────────────────────
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+\usepackage{float}
+
+% ── Header / Footer ───────────────────────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{mainblue}{\textit{Rapport d'avancement S2 — Réseaux de personnages}}}
+\fancyhead[R]{\small\textcolor{mainblue}{Mars 2026}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Sections styling ─────────────────────────────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\color{mainblue}}{}{0em}{\thesection\quad}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{accentblue}}{}{0em}{\thesubsection\quad}
+\titleformat{\subsubsection}{\normalsize\bfseries}{}{0em}{\thesubsubsection\quad}
+
+% ── Hyperlinks ────────────────────────────────────────────────────────────────
+\usepackage[colorlinks=true, linkcolor=mainblue, urlcolor=accentblue,
+            citecolor=mainblue, pdfauthor={Lotfi Abdallah, Wael Mansoura},
+            pdftitle={Rapport d'avancement S2}]{hyperref}
+
+% ── Misc ──────────────────────────────────────────────────────────────────────
+\usepackage{enumitem}
+\usepackage{mdframed}
+
+% ── Helpers ───────────────────────────────────────────────────────────────────
+\newcommand{\done}{\textcolor{done}{\textbf{Terminé}}}
+\newcommand{\inprog}{\textcolor{inprog}{\textbf{En cours}}}
+\newcommand{\notdone}{\textcolor{nottodo}{\textbf{Non commencé}}}
+\newcommand{\high}{\textcolor{red!70!black}{\textbf{Haute}}}
+\newcommand{\med}{\textcolor{orange!80!black}{\textbf{Moyenne}}}
+\newcommand{\low}{\textcolor{gray}{\textbf{Basse}}}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{document}
+
+% ── Page de titre ─────────────────────────────────────────────────────────────
+\begin{titlepage}
+  \centering
+  \vspace*{1.5cm}
+
+  {\Large\bfseries\color{mainblue} Université d'Avignon}\\[0.3cm]
+  {\normalsize Master 1 Informatique --- Parcours ILSEN}\\[0.3cm]
+  {\normalsize Année universitaire 2025--2026}
+
+  \vspace{1.5cm}
+  \noindent\rule{\textwidth}{1.5pt}\\[0.5cm]
+  {\LARGE\bfseries\color{mainblue}
+    Extraction de réseaux de personnages\\[8pt]
+    à partir de textes narratifs}\\[0.4cm]
+  {\Large Rapport d'avancement --- Semestre 2}
+  \\[0.3cm]
+  \noindent\rule{\textwidth}{1.5pt}
+
+  \vspace{1.5cm}
+
+  \begin{minipage}{0.48\textwidth}
+    \centering
+    \textbf{Étudiants}\\[4pt]
+    Lotfi \textsc{Abdallah}\\
+    Wael \textsc{Mansoura}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \centering
+    \textbf{Date}\\[4pt]
+    Mars 2026
+  \end{minipage}
+
+  \vspace{1.5cm}
+
+  \begin{mdframed}[backgroundcolor=lightblue, linecolor=accentblue, linewidth=1pt,
+                   innertopmargin=10pt, innerbottommargin=10pt,
+                   innerleftmargin=14pt, innerrightmargin=14pt]
+    \small
+    \textbf{Résumé.} Ce rapport présente l'état d'avancement du projet au terme du semestre 2.
+    Le prototype fonctionnel livre le pipeline complet du semestre 1 (extraction NER, regroupement d'alias,
+    co-occurrences, graphes NetworkX, export GraphML/Kaggle) enrichi du module principal du semestre~2 :
+    l'étiquetage automatique des relations entre personnages (\textit{friendly} / \textit{hostile} / \textit{neutral})
+    par classification zero-shot via Natural Language Inference (NLI, modèle mDeBERTa multilingue).
+    Le rapport détaille également la campagne d'expérimentation prévue en avril et l'anticipation du rapport
+    final (article en anglais, rendu \textbf{>~12 mai 2026}).
+  \end{mdframed}
+
+  \vfill
+  {\small Dépôt Moodle --- AMS Projet 2 --- Séance d'évaluation 1 (10 mars 2026)}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section{Rappel du contexte}
+% =============================================================================
+
+\subsection{Projet}
+
+Le projet consiste à extraire automatiquement des \textbf{réseaux de personnages} à partir de deux
+romans d'Isaac Asimov traduits en français :
+
+\begin{itemize}[noitemsep]
+  \item \textit{Prélude à Fondation} (19 chapitres : paf0--paf18)
+  \item \textit{Les Cavernes d'Acier} (18 chapitres : lca0--lca17)
+\end{itemize}
+
+\textbf{Total : 37 chapitres traités.}
+
+Le pipeline extrait les entités nommées (personnages), regroupe leurs alias, détecte les co-occurrences
+par fenêtre glissante, et construit un graphe de personnages au format GraphML pour chaque chapitre.
+Les résultats sont soumis dans le cadre d'une compétition Kaggle.
+
+\subsection{Bilan du semestre 1 (terminé)}
+
+Le S1 a livré un pipeline fonctionnel de bout en bout :
+
+\begin{itemize}[noitemsep]
+  \item Extraction NER multi-modèles (spaCy + Stanza, vote majoritaire)
+  \item Filtrage des personnages (LP) et des lieux (LL) avec anti-dictionnaire (\textasciitilde 868 entrées)
+  \item Regroupement d'alias (Union-Find + similarité floue + overrides manuels)
+  \item Détection des co-occurrences (fenêtre glissante configurable, \texttt{distance\_max}=150)
+  \item Génération de graphes NetworkX + export GraphML/CSV
+  \item Soumission Kaggle fonctionnelle (37 chapitres)
+\end{itemize}
+
+\subsection{Objectif du semestre 2}
+
+\textbf{Étiquetage des relations entre personnages} : enrichir chaque arête du graphe avec un type
+de relation (\textit{friendly}, \textit{hostile}, \textit{neutral}) afin de qualifier la nature des
+interactions au-delà de la simple co-occurrence.
+
+% =============================================================================
+\section{État d'avancement --- Tableau de suivi des exigences}
+% =============================================================================
+
+\subsection{Exigences du cahier des charges (S1)}
+
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.25}
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \begin{tabularx}{\textwidth}{>{\centering}p{0.4cm}
+                               X
+                               >{\centering}p{1.5cm}
+                               >{\centering}p{2.0cm}
+                               >{\centering\arraybackslash}p{1.8cm}}
+    \toprule
+    \textbf{\#} & \textbf{Exigence} & \textbf{Priorité} & \textbf{Responsable} & \textbf{Statut} \\
+    \midrule
+    \rowcolor{rowdone}1 & Extraction NER (multi-modèles spaCy + Stanza) & \high & Lotfi & \done \\
+    \rowcolor{rowdone}2 & Filtrage des personnes (LP + anti-dict.\ \textasciitilde{}868 entrées) & \high & Lotfi & \done \\
+    \rowcolor{rowdone}3 & Filtrage des lieux (LL + gazetteer Asimov) & \med & Lotfi & \done \\
+    \rowcolor{rowdone}4 & Regroupement des alias (Union-Find + fuzzy + overrides) & \high & Lotfi & \done \\
+    \rowcolor{rowdone}5 & Détection des co-occurrences (fenêtre glissante) & \high & Wael & \done \\
+    \rowcolor{rowdone}6 & Génération du graphe NetworkX (GraphML) & \high & Wael & \done \\
+    \rowcolor{rowdone}7 & Visualisation interactive HTML (PyVis/vis.js) & \med & Wael & \done \\
+    \rowcolor{rowdone}8 & Export CSV Kaggle (37 chapitres, GraphML complet) & \high & Lotfi + Wael & \done \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Suivi des exigences S1 --- \textcolor{done}{\textbf{8/8 terminées}}}
+\end{table}
+
+\subsection{Exigences supplémentaires du semestre 2}
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \begin{tabularx}{\textwidth}{>{\centering}p{0.4cm}
+                               X
+                               >{\centering}p{1.5cm}
+                               >{\centering}p{2.0cm}
+                               >{\centering\arraybackslash}p{2.2cm}}
+    \toprule
+    \textbf{\#} & \textbf{Exigence} & \textbf{Priorité} & \textbf{Responsable} & \textbf{Statut} \\
+    \midrule
+    \rowcolor{rowdone}9  & Étiquetage des relations (NLI zero-shot) & \high & Lotfi + Wael & \done \\
+    \rowcolor{rowdone}10 & Cache des labels de relations (pickle) & \high & Lotfi + Wael & \done \\
+    \rowcolor{rowdone}11 & Visualisation colorée des arêtes + HTML combiné & \med & Wael & \done \\
+    \rowcolor{rowdone}12 & Rapport de validation (\texttt{print\_validation\_report}) & \med & Lotfi + Wael & \done \\
+    \rowcolor{rowdone}13 & NER rule-based sans modèles IA & \low & Lotfi & \done \\
+    \rowcolor{rowinprog}14 & Campagne d'expérimentation (avril) & \high & Lotfi + Wael & \inprog \\
+    \rowcolor{rownot}15  & Rapport final (article anglais, \LaTeX, > 12 mai) & \high & Lotfi + Wael & \notdone \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Suivi des exigences S2 ---
+    \textcolor{done}{\textbf{5 terminées}} \textbullet{}
+    \textcolor{inprog}{\textbf{1 en cours}} \textbullet{}
+    \textcolor{nottodo}{\textbf{1 non commencée (planifiée)}}}
+\end{table}
+
+% =============================================================================
+\section{Travaux réalisés au semestre 2}
+% =============================================================================
+
+\subsection{Pipeline complet S1 + S2}
+
+La figure~\ref{fig:pipeline} présente le pipeline de bout en bout intégrant les contributions du S1 et
+la nouvelle étape d'étiquetage des relations (S2).
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    node distance = 0.55cm and 0.2cm,
+    box/.style = {rectangle, draw=mainblue, thick, fill=lightblue,
+                  rounded corners=4pt, text width=4.2cm,
+                  align=center, font=\small, minimum height=0.65cm},
+    newbox/.style = {rectangle, draw=done, very thick, fill=rowdone,
+                     rounded corners=4pt, text width=4.8cm,
+                     align=center, font=\small, minimum height=0.65cm},
+    arr/.style = {-Stealth, thick, mainblue},
+    lbl/.style = {font=\scriptsize\itshape, text=gray, anchor=west}
+  ]
+    \node[box]    (ner)   {\textbf{NER}\\rule-based / multi-modèles};
+    \node[box, below=of ner]    (filt)  {\textbf{Filtrage LP/LL}\\anti-dict + gazetteer};
+    \node[box, below=of filt]   (alias) {\textbf{Regroupement alias}\\Union-Find + fuzzy};
+    \node[box, below=of alias]  (cooc)  {\textbf{Co-occurrences}\\fenêtre glissante};
+    \node[newbox, below=of cooc](rel)   {\textbf{[S2] Étiquetage relations}\\NLI zero-shot (mDeBERTa)};
+    \node[box, below=of rel]    (graph) {\textbf{Graphe NetworkX}\\attribut \texttt{edge\_type}};
+    \node[box, below=of graph]  (out)   {\textbf{Sortie}\\GraphML / CSV Kaggle / HTML};
+
+    \draw[arr] (ner)   -- (filt);
+    \draw[arr] (filt)  -- (alias);
+    \draw[arr] (alias) -- (cooc);
+    \draw[arr] (cooc)  -- (rel);
+    \draw[arr] (rel)   -- (graph);
+    \draw[arr] (graph) -- (out);
+
+    \node[lbl] at ([xshift=0.3cm]ner.east)   {\texttt{nlp\_manual\_ner.py}};
+    \node[lbl] at ([xshift=0.3cm]filt.east)  {\texttt{nlp\_extract\_characters.py}};
+    \node[lbl] at ([xshift=0.3cm]alias.east) {\texttt{nlp\_aliases.py}};
+    \node[lbl] at ([xshift=0.3cm]cooc.east)  {\texttt{nlp\_cooccurrence.py}};
+    \node[lbl] at ([xshift=0.3cm]rel.east)   {\texttt{nlp\_relation.py} \textbf{--- NOUVEAU S2}};
+    \node[lbl] at ([xshift=0.3cm]graph.east) {\texttt{nlp\_graph.py} \textbf{--- modifié}};
+    \node[lbl] at ([xshift=0.3cm]out.east)   {\texttt{nlp\_visualize\_web.py} \textbf{--- modifié}};
+
+    \begin{scope}[on background layer]
+      \node[draw=done, fill=rowdone, opacity=0.20, rounded corners=6pt,
+            fit=(rel)(graph)(out), inner sep=6pt] {};
+    \end{scope}
+  \end{tikzpicture}
+  \caption{Pipeline complet --- les blocs en vert représentent les contributions du S2}
+  \label{fig:pipeline}
+\end{figure}
+
+\subsection{Étiquetage des relations — \texttt{nlp\_relation.py} (nouveau)}
+
+\textbf{Objectif :} pour chaque paire de personnages co-occurrents dans un chapitre, attribuer un
+label de relation parmi \textcolor{friendly}{\textbf{friendly}}, \textcolor{hostile}{\textbf{hostile}}
+ou \textcolor{neutral}{\textbf{neutral}}.
+
+\textbf{Approche retenue : classification zero-shot par NLI.}
+
+\begin{enumerate}[noitemsep]
+  \item \textbf{Extraction de contextes} : jusqu'à 5 extraits textuels de 400 caractères entourant chaque
+        co-occurrence de la paire (charA, charB).
+  \item \textbf{Inférence NLI} : pour chaque extrait, le modèle score trois hypothèses en français :
+        « ces deux personnages ont une relation amicale / hostile / neutre ».
+  \item \textbf{Vote pondéré} : score moyen par classe sur les 5 extraits.
+  \item \textbf{Seuil de confiance} : si le score maximal est inférieur à 0{,}55, le label est
+        \textit{neutral} par défaut.
+\end{enumerate}
+
+\subsubsection*{Modèle NLI retenu}
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \begin{tabular}{lp{9cm}}
+    \toprule
+    \textbf{Critère} & \textbf{Justification} \\
+    \midrule
+    Pas de données annotées & Fonctionne en zero-shot, aucun entraînement requis \\
+    Support du français     & Entraîné sur XNLI multilingue ; performant en français \\
+    Compatible CPU          & \textasciitilde{}1--3\,s/extrait sur Colab gratuit \\
+    Déterministe            & Inférence greedy + cache pickle = résultats reproductibles \\
+    Simple d'utilisation    & 5 lignes via HuggingFace \texttt{pipeline()} \\
+    \bottomrule
+  \end{tabular}
+  \caption{Justification du choix de \texttt{mDeBERTa-v3-base-mnli-xnli} (\textasciitilde{}350\,Mo)}
+\end{table}
+
+\subsubsection*{Approches rejetées}
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \begin{tabular}{lp{9.5cm}}
+    \toprule
+    \textbf{Approche} & \textbf{Raison du rejet} \\
+    \midrule
+    Analyse de sentiment   & Sentiment $\neq$ relation ; prose expositoire d'Asimov $\Rightarrow$ faux neutres \\
+    Règles syntaxiques     & Précision correcte mais rappel quasi nul sur texte littéraire \\
+    Fine-tuning Transformer & Nécessite des données annotées que nous n'avons pas \\
+    LLM local (GGUF)       & Trop lent sur CPU Colab ; réservé comme voie d'escalade \\
+    \bottomrule
+  \end{tabular}
+  \caption{Approches envisagées et raisons de rejet}
+\end{table}
+
+\subsubsection*{Stratégie de cache}
+
+\begin{itemize}[noitemsep]
+  \item Clé : \texttt{(chapter\_id, canonA, canonB)} avec canonA $<$ canonB (tri lexicographique)
+  \item Fichier : \texttt{relation\_cache.pkl} (pickle Python)
+  \item Invalidation : uniquement si changement du modèle NLI ou du seuil de confiance
+\end{itemize}
+
+\subsection{NER rule-based — \texttt{nlp\_manual\_ner.py} (nouveau)}
+
+Alternative au NER multi-modèles du S1, fonctionnant \textbf{sans aucun modèle IA} :
+
+\begin{enumerate}[noitemsep]
+  \item \textbf{Gazetteer} : dictionnaires des personnages et lieux des deux romans (correspondance la
+        plus longue d'abord, non chevauchante).
+  \item \textbf{Heuristiques de capitalisation} : mots capitalisés en milieu de phrase, absents d'une
+        liste noire de \textasciitilde{}200 mots courants français.
+  \item \textbf{Patterns regex} : \textit{Docteur X}, \textit{R. Daneel} (robots asimoviens), préfixes
+        de titres (\textit{Professeur}, \textit{Inspecteur}\ldots).
+\end{enumerate}
+
+\textbf{Avantage :} exécution quasi-instantanée (quelques secondes pour les 37 chapitres), aucun
+téléchargement de modèle, idéal pour le développement itératif rapide.
+
+\subsection{Modifications de \texttt{nlp\_graph.py}}
+
+\begin{itemize}[noitemsep]
+  \item Ajout du paramètre \texttt{edge\_labels} à \texttt{generate\_graph()}
+  \item Écriture de l'attribut \texttt{edge\_type} sur chaque arête du graphe NetworkX
+  \item Le champ \texttt{edge\_type} apparaît automatiquement dans la sortie GraphML
+  \item Ajout du reverse alias map pour l'attribut \texttt{names} des nœuds
+\end{itemize}
+
+\subsection{Visualisation enrichie — \texttt{nlp\_visualize\_web.py}}
+
+Arêtes colorées par type de relation dans la visualisation HTML :
+
+\begin{itemize}[noitemsep]
+  \item \textcolor{friendly}{\rule{9pt}{9pt}}\ \textcolor{friendly}{\textbf{Vert}} $\to$ friendly
+  \item \textcolor{hostile}{\rule{9pt}{9pt}}\ \textcolor{hostile}{\textbf{Rouge}} $\to$ hostile
+  \item \textcolor{neutral}{\rule{9pt}{9pt}}\ \textcolor{neutral}{\textbf{Gris}} $\to$ neutral
+\end{itemize}
+
+Nouvelle fonction \texttt{create\_combined\_html()} : génère un \textbf{seul fichier
+\texttt{all\_networks.html}} contenant les 37 chapitres avec :
+barre de navigation par livre/chapitre, statistiques (nœuds, arêtes, labels), infobulles au survol
+(poids + type de relation), légende visuelle.
+
+\subsection{Notebook intégrateur — \texttt{nomodels.ipynb}}
+
+Notebook complet orchestrant le pipeline de bout en bout avec la NER rule-based :
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \begin{tabular}{llr}
+    \toprule
+    \textbf{Section} & \textbf{Contenu} & \textbf{Durée} \\
+    \midrule
+    1. Setup              & Imports, rechargement des modules                       & instantané \\
+    2. Configuration      & \texttt{books\_config}, anti-dictionnaire               & instantané \\
+    3. Extraction NER     & NER rule-based sur 37 chapitres                         & secondes \\
+    3.1 Cache NER         & Sauvegarde/chargement pickle (Google Drive)             & instantané \\
+    4. Relation cache     & Chargement \texttt{relation\_cache.pkl}                 & instantané \\
+    4.1 Boucle principale & Co-occurrences + \texttt{label\_relationships()} + graphe + CSV & heures \\
+    4.2 Cache relations   & Sauvegarde du cache mis à jour                          & instantané \\
+    5. Vérification       & Aperçu soumission + \texttt{print\_validation\_report()} & instantané \\
+    6. Test fenêtres      & Comparaison \texttt{distance\_max} = [25, 50, 75, 100, 150] & secondes \\
+    7. Visualisation HTML & Fichier HTML combiné 37 chapitres interactif            & secondes \\
+    \bottomrule
+  \end{tabular}
+  \caption{Sections du notebook \texttt{nomodels.ipynb}}
+\end{table}
+
+% =============================================================================
+\section{Indicateurs de performance (KPIs)}
+% =============================================================================
+
+\subsection{Couverture du corpus}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Indicateur} & \textbf{Valeur} \\
+    \midrule
+    Chapitres traités         & \textbf{37 / 37} (100\,\%) \\
+    Livres couverts           & 2 / 2 (\textit{Prélude à Fondation} + \textit{Les Cavernes d'Acier}) \\
+    Nœuds typiques/chapitre   & 5--20 \\
+    Arêtes typiques/chapitre  & 5--30 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Couverture du corpus}
+\end{table}
+
+\subsection{Paramètres du système}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{lrl}
+    \toprule
+    \textbf{Paramètre} & \textbf{Valeur} & \textbf{Rôle} \\
+    \midrule
+    \texttt{distance\_max}          & 150 mots & Taille de la fenêtre de co-occurrence \\
+    \texttt{min\_occurrences}       & 2        & Seuil minimal de mentions d'un personnage \\
+    \texttt{CONFIDENCE\_THRESHOLD}  & 0{,}55   & Seuil NLI (en dessous $\Rightarrow$ neutral) \\
+    \texttt{MAX\_CONTEXTS\_PER\_PAIR} & 5      & Nombre max d'extraits analysés par paire \\
+    \texttt{MAX\_SNIPPET\_CHARS}    & 400      & Longueur max des extraits du modèle NLI \\
+    \bottomrule
+  \end{tabular}
+  \caption{Paramètres configurables du système}
+\end{table}
+
+\subsection{Modèle NLI et performances}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Indicateur} & \textbf{Valeur} \\
+    \midrule
+    Modèle NLI              & \texttt{MoritzLaurer/mDeBERTa-v3-base-mnli-xnli} \\
+    Taille du modèle        & \textasciitilde{}350\,Mo \\
+    Taxonomie               & 3 classes : friendly / hostile / neutral \\
+    Exécution               & CPU uniquement (Google Colab gratuit) \\
+    Temps par extrait       & 1--3\,s \\
+    NER rule-based (37 chap.) & quelques secondes \\
+    Boucle NLI complète     & quelques heures (Colab CPU) \\
+    Reproductibilité        & inférence greedy + cache pickle \\
+    \bottomrule
+  \end{tabular}
+  \caption{Performance technique}
+\end{table}
+
+\textbf{Note sur la distribution des labels.} Les chapitres d'Asimov sont souvent expositoires ou
+philosophiques — de longs passages où les personnages débattent sans vocabulaire émotif. Une proportion
+élevée de labels \textit{neutral} est attendue ; ce n'est pas un défaut du système, mais le reflet
+du contenu textuel de chaque chapitre.
+
+% =============================================================================
+\section{Préparation de la campagne d'expérimentation (avril)}
+% =============================================================================
+
+La campagne d'expérimentation (avril 2026) vise à évaluer rigoureusement la qualité de l'étiquetage
+des relations et à explorer des axes d'amélioration. Cinq expériences sont planifiées.
+
+\subsection*{Exp.\ 1 — Annotation manuelle (gold standard)}
+
+\textbf{Objectif :} construire un jeu de référence pour l'évaluation quantitative.
+
+\textbf{Protocole :}
+\begin{itemize}[noitemsep]
+  \item Sélectionner \textasciitilde{}50 paires de personnages (25 par livre),
+        représentatives des trois classes.
+  \item Chaque membre du binôme annote indépendamment le type de relation en lisant le texte source.
+  \item Calcul du taux d'accord inter-annotateurs (Cohen's $\kappa$).
+\end{itemize}
+
+\textbf{Livrable :} \texttt{gold\_annotations.csv} (colonnes : \texttt{chapter\_id, charA, charB, gold\_label}).
+
+\subsection*{Exp.\ 2 — Comparaison de modèles NLI}
+
+\textbf{Objectif :} determiner si un modèle alternatif produit des labels de meilleure qualité.
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{lp{8cm}}
+    \toprule
+    \textbf{Modèle} & \textbf{Caractéristique} \\
+    \midrule
+    \texttt{mDeBERTa-v3-base-mnli-xnli}     & Multilingue, baseline actuelle \\
+    \texttt{cmarkea/distilcamembert-base-nli} & Spécifique au français, plus léger \\
+    Mistral API (\texttt{mistral-medium}, T=0) & LLM en batch, qualité quasi-humaine \\
+    \bottomrule
+  \end{tabular}
+  \caption{Modèles comparés dans l'Exp.\ 2}
+\end{table}
+
+\textbf{Protocole :} évaluer chaque modèle sur le gold standard (précision, rappel, F1 macro).
+
+\subsection*{Exp.\ 3 — Impact de \texttt{distance\_max} sur la qualité}
+
+\textbf{Objectif :} évaluer si la taille de la fenêtre affecte la qualité des labels (et pas seulement
+le nombre de co-occurrences).
+
+\textbf{Protocole :} tester \texttt{distance\_max} $\in$ [25, 50, 75, 100, 150, 200] ;
+comparer la distribution des labels et la qualité sur le gold standard.
+
+\subsection*{Exp.\ 4 — Faisabilité d'une taxonomie 5 classes}
+
+\textbf{Objectif :} explorer l'extension à 5 classes.
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Label} & \textbf{Signification} \\
+    \midrule
+    \texttt{ally}      & Coopération avec un objectif commun \\
+    \texttt{mentor}    & Relation de guidance/enseignement \\
+    \texttt{hostile}   & Conflit, opposition \\
+    \texttt{romantic}  & Relation intime \\
+    \texttt{neutral}   & Pas de signal clair \\
+    \bottomrule
+  \end{tabular}
+  \caption{Taxonomie étendue à 5 classes}
+\end{table}
+
+\subsection*{Exp.\ 5 — LLM comme baseline de qualité supérieure}
+
+\textbf{Objectif :} évaluer si un appel batch à un LLM peut servir de référence ou de remplacement
+pour le modèle NLI.
+
+\textbf{Protocole :} appel Mistral API avec \texttt{temperature=0} :
+\begin{quote}
+  \textit{« Dans ce passage, la relation entre \{charA\} et \{charB\} est-elle amicale, hostile
+  ou neutre ? Réponds par un seul mot. »}
+\end{quote}
+Comparaison des résultats avec les labels NLI sur le gold standard.
+
+\subsection{Calendrier de la campagne d'expérimentation}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Semaine} & \textbf{Activité} \\
+    \midrule
+    Semaine 1 (avril) & Exp.\ 1 : annotation manuelle, gold standard (50 paires) \\
+    Semaine 2 (avril) & Exp.\ 2 : comparaison modèles NLI \\
+    Semaine 3 (avril) & Exp.\ 3 : impact de \texttt{distance\_max} \\
+    Semaine 4 (avril) & Exp.\ 4 \& 5 : taxonomie 5 classes + LLM baseline \\
+    \bottomrule
+  \end{tabular}
+  \caption{Calendrier de la campagne d'expérimentation}
+\end{table}
+
+% =============================================================================
+\section{Anticipation du rapport final (> 12 mai 2026)}
+% =============================================================================
+
+\subsection{Format imposé}
+
+Le rapport final est un \textbf{article scientifique en anglais}, rédigé en \LaTeX{}, avec la
+structure suivante :
+
+\begin{enumerate}[noitemsep]
+  \item \textbf{Introduction} --- contexte, problématique, revue de littérature
+  \item \textbf{Methodology} --- pipeline complet, choix techniques justifiés
+  \item \textbf{Experimental Results} --- résultats de la campagne d'expérimentation (avril)
+  \item \textbf{Conclusion} --- bilan, limites, perspectives
+  \item \textbf{References} --- bibliographie complète
+\end{enumerate}
+
+\subsection{Bibliographie déjà identifiée}
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \begin{tabular}{lp{10cm}}
+    \toprule
+    \textbf{Thème} & \textbf{Référence} \\
+    \midrule
+    Zero-shot NLI         & Yin et al.\ (2019) --- \textit{Benchmarking Zero-shot Text Classification} \\
+    mDeBERTa / DeBERTa    & He et al.\ (2021) --- \textit{DeBERTa: Decoding-enhanced BERT with Disentangled Attention} \\
+    XNLI (multilingual)   & Conneau et al.\ (2018) --- \textit{XNLI: Evaluating Cross-lingual Sentence Representations} \\
+    Réseaux de personnages & Labatut \& Bost (2019) --- \textit{Extraction and Analysis of Fictional Character Networks} \\
+    Réseaux de personnages & Elson \& McKeown (2010) --- \textit{Automatic Attribution of Quoted Speech in Literary Narrative} \\
+    Résolution d'alias    & Vala et al.\ (2015) --- \textit{Mr.\ Bennet, his coachman, and the Archbishop walk into a bar\ldots} \\
+    NER en français       & spaCy / Stanza documentation et articles de référence \\
+    \bottomrule
+  \end{tabular}
+  \caption{Bibliographie cible pour le rapport final}
+\end{table}
+
+\subsection{Planning de rédaction}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Période} & \textbf{Activité} \\
+    \midrule
+    Mi-avril          & Collecte des résultats expérimentaux + bibliographie complète \\
+    Fin avril         & Rédaction Methodology + Experimental Results \\
+    Semaine 1 de mai  & Rédaction Introduction + revue de littérature \\
+    Semaine 2 de mai  & Conclusion + relecture croisée \\
+    \textbf{12 mai}   & \textbf{Soumission du rapport final} \\
+    \bottomrule
+  \end{tabular}
+  \caption{Planning de rédaction du rapport final}
+\end{table}
+
+% =============================================================================
+\section{Répartition des tâches}
+% =============================================================================
+
+\subsection{Travaux réalisés (S2)}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{lp{2.5cm}}
+    \toprule
+    \textbf{Tâche} & \textbf{Responsable} \\
+    \midrule
+    Conception du plan d'implémentation S2                         & Lotfi + Wael \\
+    \texttt{nlp\_relation.py} (NLI zero-shot, cache, validation)   & Lotfi + Wael \\
+    \texttt{nlp\_manual\_ner.py} (NER rule-based)                  & Lotfi \\
+    \texttt{nlp\_graph.py} (attribut \texttt{edge\_type})          & Wael \\
+    \texttt{nlp\_visualize\_web.py} (arêtes colorées + HTML combiné) & Lotfi \\
+    Notebook \texttt{nomodels.ipynb} (intégration bout en bout)    & Wael \\
+    Mise à jour \texttt{antidict.txt} + \texttt{characters.txt}    & Lotfi \\
+    \bottomrule
+  \end{tabular}
+  \caption{Répartition des travaux réalisés au S2}
+\end{table}
+
+\subsection{Travaux à venir}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Tâche} & \textbf{Responsable} & \textbf{Échéance} \\
+    \midrule
+    Annotation manuelle (gold standard, 50 paires) & Lotfi + Wael & Début avril \\
+    Campagne d'expérimentation (Exp.\ 1--5)        & Lotfi + Wael & Avril \\
+    Collecte des références bibliographiques       & Lotfi        & Mi-avril \\
+    Rédaction rapport final (\LaTeX, anglais)      & Lotfi + Wael & Fin avril -- mai \\
+    Relecture croisée et soumission                & Lotfi + Wael & 12 mai \\
+    \bottomrule
+  \end{tabular}
+  \caption{Tâches à venir et échéances}
+\end{table}
+
+% =============================================================================
+\newpage
+\appendix
+\section{Annexe — Inventaire des fichiers du projet}
+% =============================================================================
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \begin{tabularx}{\textwidth}{lp{1.6cm}X}
+    \toprule
+    \textbf{Fichier} & \textbf{Statut S2} & \textbf{Rôle} \\
+    \midrule
+    \texttt{nlp\_relation.py}           & \textbf{Nouveau}  & Classification des relations (NLI zero-shot, cache, validation) \\
+    \texttt{nlp\_manual\_ner.py}        & \textbf{Nouveau}  & NER rule-based sans modèle IA \\
+    \texttt{nomodels.ipynb}             & \textbf{Nouveau}  & Notebook complet (pipeline rule-based + étiquetage) \\
+    \texttt{nlp\_graph.py}              & \textbf{Modifié}  & Génération du graphe avec attribut \texttt{edge\_type} \\
+    \texttt{nlp\_visualize\_web.py}     & \textbf{Modifié}  & Visualisation interactive avec arêtes colorées \\
+    \texttt{antidict.txt}               & \textbf{Modifié}  & Anti-dictionnaire (\textasciitilde{}868 entrées) \\
+    \texttt{characters.txt}             & \textbf{Modifié}  & Liste de personnages pour le gazetteer \\
+    \texttt{nlp\_cooccurrence.py}       & Inchangé          & Détection des co-occurrences \\
+    \texttt{nlp\_extract\_characters.py}& Inchangé          & Comptage et filtrage des entités \\
+    \texttt{nlp\_aliases.py}            & Inchangé          & Regroupement d'alias (Union-Find) \\
+    \texttt{nlp\_utils.py}              & Inchangé          & Utilitaires (lecture de fichiers, anti-dict) \\
+    \texttt{all\_networks.html}         & \textbf{Nouveau}  & Visualisation combinée 37 chapitres (arêtes colorées) \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Inventaire des fichiers du projet}
+\end{table}
+
+\end{document}

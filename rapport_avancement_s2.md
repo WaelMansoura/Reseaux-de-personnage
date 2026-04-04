@@ -279,8 +279,6 @@ La campagne d'expérimentation vise à évaluer rigoureusement la qualité de l'
 
 - Sélectionner ~50 paires de personnages (25 par livre), représentatives des trois classes
 - Chaque binôme annote indépendamment le type de relation en lisant le texte source
-- Calcul de l'accord inter-annotateur (Cohen's κ)
-- Calcul de précision / rappel / F1 par classe en comparant les labels NLI avec la référence
 
 **Livrable** : Fichier `gold_annotations.csv` avec colonnes `chapter_id, charA, charB, gold_label`
 
@@ -296,83 +294,60 @@ La campagne d'expérimentation vise à évaluer rigoureusement la qualité de l'
 | `cmarkea/distilcamembert-base-nli`            | Spécifique au français              |
 | Mistral API (`mistral-medium`, temperature=0) | LLM en batch, qualité quasi-humaine |
 
-**Protocole** : Évaluer chaque modèle sur le gold standard (Exp. 1). Comparer F1 macro, F1 par classe, et taux de `neutral`.
+**Protocole** : Évaluer chaque modèle sur le gold standard (Exp. 1).
 
-### Exp 3 : Sensibilité au seuil de confiance
-
-**Objectif** : Trouver la valeur optimale de `CONFIDENCE_THRESHOLD`.
-
-**Protocole** :
-
-- Faire varier le seuil : [0.40, 0.50, 0.55, 0.60, 0.65, 0.75]
-- Pour chaque valeur, mesurer :
-  - Distribution des labels (% friendly / hostile / neutral)
-  - F1 sur le gold standard (si disponible)
-  - Stabilité (variation du nombre de labels non-neutres)
-
-**Résultat attendu** : Courbe seuil → F1 permettant de choisir la meilleure valeur.
-
-### Exp 4 : Impact de la taille de fenêtre sur la qualité des relations
+### Exp 3 : Impact de la taille de fenêtre sur la qualité des relations
 
 **Objectif** : Évaluer si `distance_max` affecte la qualité des labels (et pas seulement le nombre de co-occurrences).
 
 **Protocole** :
 
-- Fixer le seuil de confiance à sa valeur optimale (issue de Exp. 3)
 - Faire varier `distance_max` : [25, 50, 75, 100, 150, 200]
 - Comparer la distribution des labels et la qualité sur le gold standard
 - Mesurer le nombre moyen de nœuds et d'arêtes par graphe
 
-### Exp 5 : NER rule-based vs NER multi-modèles
-
-**Objectif** : Comparer la qualité des graphes en aval selon la méthode d'extraction NER utilisée.
-
-**Protocole** :
-
-- Générer les graphes avec `nlp_manual_ner.py` (rule-based) et `nlp_multi_ner.py` (spaCy + Stanza)
-- Comparer : nombre de personnages détectés, précision des alias, impact sur les labels de relation
-- Évaluer sur un sous-ensemble de chapitres avec des personnages connus
-
-### Exp 6 : Faisabilité d'une taxonomie étendue (5 classes)
+### Exp 4 : Faisabilité d'une taxonomie étendue (5 classes)
 
 **Objectif** : Explorer l'extension de la taxonomie à 5 classes.
 
 **Taxonomie proposée** :
 
-| Label      | Signification                                 |
-| ---------- | --------------------------------------------- |
-| `ally`     | Coopération active vers un objectif commun    |
-| `mentor`   | Relation asymétrique de guidance/enseignement |
-| `hostile`  | Conflit, opposition                           |
-| `romantic` | Relation affective/intime                     |
-| `neutral`  | Pas de signal clair                           |
+| Label      | Signification                       |
+| ---------- | ----------------------------------- |
+| `ally`     | Coopération avec un objectif commun |
+| `mentor`   | Relation de guidance/enseignement   |
+| `hostile`  | Conflit, opposition                 |
+| `romantic` | Relation intime                     |
+| `neutral`  | Pas de signal clair                 |
 
 **Protocole** :
 
 - Tester avec le modèle NLI mDeBERTa (5 hypothèses françaises)
-- Si résultats insuffisants, tester avec l'API Mistral
 - Évaluer sur un sous-ensemble annoté (extension du gold standard)
 
-### Exp 7 : Utilisation d'un LLM comme baseline de qualité supérieure
+### Exp 5 : Utilisation d'un LLM comme baseline de qualité supérieure
 
-**Objectif** : Évaluer si un appel unique par lot à l'API Mistral peut servir de référence (ou de remplacement) pour le modèle NLI.
+**Objectif** : Évaluer si un appel unique par lot à un API LLM peut servir de référence (ou de remplacement) pour le modèle NLI.
+
+### Exp 5: Utilisation d'un LLM comme baseline de qualité supérieure
+
+**Objectif** : Évaluer si un appel unique par lot à un LLM peut servir de référence (ou de remplacement) pour le modèle NLI.
 
 **Protocole** :
 
-- Estimer ~555 appels (37 chapitres × ~15 paires moyennes)
-- Appeler `mistral-medium` à `temperature=0` avec un prompt structuré :
+- Appeler un LLM avec `temperature=0` (mode déterministe) et un prompt structuré :
   > _« Dans ce passage, la relation entre {charA} et {charB} est-elle amicale, hostile ou neutre ? Réponds par un seul mot. »_
 - Stocker les résultats dans le cache existant
 - Comparer avec les labels NLI
 
 ### Calendrier prévisionnel
 
-| Semaine              | Activité                                                 |
-| -------------------- | -------------------------------------------------------- |
-| 1ère semaine d'avril | Exp. 1 : annotation manuelle (gold standard)             |
-| 2ème semaine d'avril | Exp. 2 + 3 : comparaison de modèles + seuil de confiance |
-| 3ème semaine d'avril | Exp. 4 + 5 : fenêtre + NER rule-based vs multi-modèles   |
-| 4ème semaine d'avril | Exp. 6 + 7 : taxonomie étendue + Mistral API             |
+| Semaine              | Activité                                                          |
+| -------------------- | ----------------------------------------------------------------- |
+| 1ère semaine d'avril | Exp. 1 : annotation manuelle (gold standard, 50 paires)           |
+| 2ème semaine d'avril | Exp. 2 : comparaison de modèles NLI (mDeBERTa vs DistilCamemBERT) |
+| 3ème semaine d'avril | Exp. 3 : impact de `distance_max` sur la qualité des relations    |
+| 4ème semaine d'avril | Exp. 4 : faisabilité taxonomie 5 classes + Exp. 5 : LLM baseline  |
 
 ---
 
@@ -382,12 +357,11 @@ La campagne d'expérimentation vise à évaluer rigoureusement la qualité de l'
 
 Le rapport final est un **article scientifique en anglais**, rédigé en **LaTeX**, suivant la structure imposée :
 
-1. **Abstract** — Résumé concis du projet, méthode et résultats principaux
-2. **Introduction** — Contexte, problématique, revue de la littérature
-3. **Methodology** — Pipeline complet (NER, alias, co-occurrence, étiquetage NLI), choix techniques justifiés
-4. **Experimental Results** — Résultats de la campagne d'expérimentation (avril), métriques (F1, précision, rappel), comparaisons
-5. **Conclusion** — Bilan, limites, perspectives
-6. **References** — Bibliographie complète
+1. **Introduction** — Contexte, problématique, revue de la littérature
+2. **Methodology** — Pipeline complet (NER, alias, co-occurrence, étiquetage NLI), choix techniques justifiés
+3. **Experimental Results** — Résultats de la campagne d'expérimentation (avril), métriques, comparaisons
+4. **Conclusion** — Bilan, limites, perspectives
+5. **References** — Bibliographie complète
 
 ### Références bibliographiques à collecter
 
@@ -416,21 +390,21 @@ Le rapport final est un **article scientifique en anglais**, rédigé en **LaTeX
 
 ### Travaux réalisés (S2)
 
-| Tâche                                                                    | Responsable  |
-| ------------------------------------------------------------------------ | ------------ |
-| Conception du plan d'implémentation (`IMPLEMENTATION_PLAN_RELATIONS.md`) | Lotfi + Wael |
-| Implémentation de `nlp_relation.py` (NLI zero-shot)                      | Lotfi + Wael |
-| Implémentation de `nlp_manual_ner.py` (NER rule-based)                   | Lotfi        |
-| Modification de `nlp_graph.py` (attribut `edge_type`)                    | Wael         |
-| Modification de `nlp_visualize_web.py` (arêtes colorées + HTML combiné)  | Wael         |
-| Intégration dans le notebook `nomodels.ipynb`                            | Lotfi + Wael |
+| Tâche                                                                   | Responsable  |
+| ----------------------------------------------------------------------- | ------------ |
+| Conception du plan d'implémentation                                     | Lotfi + Wael |
+| Implémentation de `nlp_relation.py` (NLI zero-shot)                     | Lotfi + Wael |
+| Implémentation de `nlp_manual_ner.py` (NER rule-based)                  | Lotfi        |
+| Modification de `nlp_graph.py` (attribut `edge_type`)                   | Wael         |
+| Intégration dans le notebook `nomodels.ipynb`                           | Wael         |
+| Modification de `nlp_visualize_web.py` (arêtes colorées + HTML combiné) | Lotfi        |
 
 ### Travaux à venir
 
 | Tâche                                          | Responsable  | Échéance           |
 | ---------------------------------------------- | ------------ | ------------------ |
 | Annotation manuelle (gold standard, 50 paires) | Lotfi + Wael | Début avril        |
-| Campagne d'expérimentation (Exp. 1–7)          | Lotfi + Wael | Avril              |
+| Campagne d'expérimentation (Exp. 1–5)          | Lotfi + Wael | Avril              |
 | Collecte des références bibliographiques       | Lotfi        | Mi-avril           |
 | Rédaction du rapport final (LaTeX, anglais)    | Lotfi + Wael | Fin avril – 12 mai |
 | Relecture croisée et soumission                | Lotfi + Wael | 12 mai             |
@@ -452,14 +426,5 @@ Le rapport final est un **article scientifique en anglais**, rédigé en **LaTeX
 | `nlp_extract_characters.py` | Inchangé    | Comptage et filtrage des entités                                |
 | `nlp_aliases.py`            | Inchangé    | Regroupement d'alias (Union-Find)                               |
 | `nlp_utils.py`              | Inchangé    | Utilitaires (lecture de fichiers, anti-dict)                    |
-| `antidict.txt`              | Inchangé    | Anti-dictionnaire (~868 entrées)                                |
-| `characters.txt`            | Inchangé    | Liste de personnages pour le gazetteer                          |
-
-### B. Voie d'escalade qualité
-
-Si les résultats de la campagne d'expérimentation montrent que les labels NLI sont insuffisants :
-
-1. **Augmenter `CONFIDENCE_THRESHOLD`** (0.55 → 0.65) — plus de labels `neutral`, mais meilleure précision sur ceux qui sont attribués
-2. **Changer de modèle** — tester `cmarkea/distilcamembert-base-nli` (spécifique au français)
-3. **Batch Mistral API** — ~555 appels à `temperature=0`, résultats stockés dans le cache existant
-4. **Règles syntaxiques en override** — lexique de verbes (tuer→hostile, aider→friendly) appliqué avant le NLI
+| `antidict.txt`              | **Modifié** | Anti-dictionnaire (~868 entrées)                                |
+| `characters.txt`            | **Modifié** | Liste de personnages pour le gazetteer                          |
