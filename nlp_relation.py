@@ -1,77 +1,95 @@
-"""
-nlp_relation.py
----------------
-Relationship type labeling for character co-occurrence edges.
-
-Primary approach : zero-shot NLI (MoritzLaurer/mDeBERTa-v3-base-mnli-xnli)
-Fallback         : returns "neutral" on any error
-Cache            : caller passes a dict keyed on (chapter_id, charA, charB)
-
-Typical usage:
-    edge_labels = label_relationships(
-        text, cooccurrences, alias_map,
-        distance_max=distance_max,
-        chapter_id=chapter_id,
-        cache=relation_cache,
-    )
-    G = generate_graph(cooccurrences, LP_merged, alias_map=alias_map, edge_labels=edge_labels)
-"""
-
 import re
 import functools
 from collections import Counter, defaultdict
 from typing import Dict, List, Optional, Tuple
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from scipy.special import softmax
+
+import numpy as np
+
+# Load once (like your NLI model)
+_tokenizer = AutoTokenizer.from_pretrained("cardiffnlp/twitter-xlm-roberta-base-sentiment")
+_model = AutoModelForSequenceClassification.from_pretrained("cardiffnlp/twitter-xlm-roberta-base-sentiment")
+
 
 # ---------------------------------------------------------------------------
-# Configuration — adjust these without changing any other code
+# Configuration
 # ---------------------------------------------------------------------------
 
-NLI_MODEL = "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
+# Much faster than zero-shot NLI
+EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
-# French label hypotheses fed to the NLI model.
-# Wording matters — keep these as simple declarative statements.
-LABELS_FR = [
-    "ces deux personnages ont une relation amicale",
-    "ces deux personnages ont une relation hostile",
-    "ces deux personnages ont une relation neutre",
-]
-
-# Map NLI French hypothesis → output edge_type string
-LABEL_MAP = {
-    "ces deux personnages ont une relation amicale": "friendly",
-    "ces deux personnages ont une relation hostile": "hostile",
-    "ces deux personnages ont une relation neutre":  "neutral",
+# Short semantic prototypes for each relationship type.
+# These are used as label anchors in embedding space.
+LABEL_PROMPTS = {
+    "friendly": [
+        "Two characters are friends.",
+        "They trust and support each other.",
+        "They are kind to one another.",
+    ],
+    "hostile": [
+        "Two characters are enemies.",
+        "They hate or oppose each other.",
+        "They are in conflict or hostile.",
+    ],
+    "neutral": [
+        "Two characters have no clear relationship.",
+        "They simply appear together without strong feelings.",
+        "Their interaction is ordinary or ambiguous.",
+    ],
 }
 
-# Minimum average NLI confidence to commit to a non-neutral label.
-# If the winning label's average confidence is below this threshold, fall back to "neutral".
-# Raise to 0.65 if you see too many false friendly/hostile labels.
-CONFIDENCE_THRESHOLD = 0.55
-
-# Maximum snippets classified per pair (caps batch size; takes earliest co-occurrences)
+CONFIDENCE_THRESHOLD = 0.45
 MAX_CONTEXTS_PER_PAIR = 5
-
-# Characters sent to the NLI model per snippet (long windows are truncated)
 MAX_SNIPPET_CHARS = 400
 
 
 # ---------------------------------------------------------------------------
-# Model loading — lazy singleton, loaded once per process
+# Embedding model loading
 # ---------------------------------------------------------------------------
 
 @functools.lru_cache(maxsize=1)
-def _get_classifier():
-    """Load the NLI classifier once and reuse across all calls."""
-    from transformers import pipeline as hf_pipeline
-    print(f"[nlp_relation] Loading NLI model: {NLI_MODEL}  (first call only — ~350 MB download)")
-    clf = hf_pipeline(
-        "zero-shot-classification",
-        model=NLI_MODEL,
-        device=-1,          # CPU; set to 0 for GPU if available
-        multi_label=False,
-    )
-    print("[nlp_relation] Model ready.")
-    return clf
+def _get_embedder():
+    """
+    Load the sentence embedding model once and reuse it.
+    """
+    from sentence_transformers import SentenceTransformer
+    print(f"[nlp_relation] Loading embedding model: {EMBEDDING_MODEL}")
+    model = SentenceTransformer(EMBEDDING_MODEL)
+    print("[nlp_relation] Embedding model ready.")
+    return model
+
+
+@functools.lru_cache(maxsize=1)
+def _get_label_embeddings() -> Tuple[np.ndarray, List[str]]:
+    """
+    Precompute embeddings for the relationship labels.
+    Returns:
+        (label_matrix, label_names)
+    """
+    model = _get_embedder()
+
+    label_names = ["friendly", "hostile", "neutral"]
+    prompts = []
+    prompt_owner = []
+
+    for label in label_names:
+        for prompt in LABEL_PROMPTS[label]:
+            prompts.append(prompt)
+            prompt_owner.append(label)
+
+    emb = model.encode(prompts, convert_to_numpy=True, normalize_embeddings=True)
+
+    # Average prompt embeddings per label
+    label_vectors = []
+    for label in label_names:
+        idxs = [i for i, owner in enumerate(prompt_owner) if owner == label]
+        vec = emb[idxs].mean(axis=0)
+        vec = vec / (np.linalg.norm(vec) + 1e-12)
+        label_vectors.append(vec)
+
+    label_matrix = np.vstack(label_vectors)  # shape: (3, dim)
+    return label_matrix, label_names
 
 
 # ---------------------------------------------------------------------------
@@ -86,33 +104,14 @@ def extract_cooccurrence_contexts(
     distance_max: int = 100,
     max_contexts: int = MAX_CONTEXTS_PER_PAIR,
 ) -> List[str]:
-    """
-    Return up to `max_contexts` raw prose snippets in which charA and charB
-    co-appear within `distance_max` word tokens of each other.
-
-    Parameters
-    ----------
-    text         : raw chapter text
-    charA / charB: canonical character names
-    alias_map    : {surface_form: canonical_name}
-    distance_max : same window size used for co-occurrence detection
-    max_contexts : cap on returned snippets (takes earliest occurrences)
-
-    Returns
-    -------
-    List of raw text substrings; may be empty if the pair never co-appears.
-    """
-    # Build full alias sets for each character (including the canonical name itself)
     aliases_A = {sf for sf, canon in alias_map.items() if canon == charA} | {charA}
     aliases_B = {sf for sf, canon in alias_map.items() if canon == charB} | {charB}
 
-    # Tokenize preserving character offsets (re.finditer keeps start/end positions)
     token_matches = list(re.finditer(r"\S+", text))
     token_texts_lower = [m.group().lower() for m in token_matches]
     n = len(token_matches)
 
     def find_positions(aliases: set) -> List[int]:
-        """Return all token indices where any alias surface form begins."""
         positions = []
         for alias in aliases:
             alias_tokens = alias.lower().split()
@@ -132,15 +131,14 @@ def extract_cooccurrence_contexts(
         for b in pos_B:
             if abs(a - b) <= distance_max:
                 win_start = min(a, b)
-                win_end   = max(a, b) + 1
+                win_end = max(a, b) + 1
                 window_key = (win_start, win_end)
                 if window_key in used_windows:
                     continue
                 used_windows.add(window_key)
 
-                # Recover the raw text span via character offsets
                 char_start = token_matches[win_start].start()
-                char_end   = token_matches[min(win_end, n - 1)].end()
+                char_end = token_matches[min(win_end, n - 1)].end()
                 snippet = text[char_start:char_end].strip()
                 contexts.append(snippet)
 
@@ -156,73 +154,61 @@ def extract_cooccurrence_contexts(
 
 def _aggregate_votes(votes: List[Tuple[str, float]]) -> str:
     """
-    Confidence-weighted majority vote over per-snippet NLI results.
-
-    Sums raw confidence scores per French hypothesis label across all snippets,
-    normalises to a per-snippet average, and returns the LABEL_MAP-translated
-    winner.  Falls back to "neutral" if the normalised winning score is below
-    CONFIDENCE_THRESHOLD (avoids committing on weak/ambiguous signal).
+    Confidence-weighted majority vote over per-snippet similarity results.
     """
     if not votes:
         return "neutral"
 
     scores: Dict[str, float] = defaultdict(float)
-    for label_fr, confidence in votes:
-        scores[label_fr] += confidence
+    for label, confidence in votes:
+        scores[label] += confidence
 
-    winner_fr    = max(scores, key=scores.get)
-    winner_score = scores[winner_fr] / len(votes)   # per-snippet average
+    winner = max(scores, key=scores.get)
+    winner_score = scores[winner] / len(votes)
 
     if winner_score < CONFIDENCE_THRESHOLD:
         return "neutral"
 
-    return LABEL_MAP.get(winner_fr, "neutral")
+    return winner
 
 
 # ---------------------------------------------------------------------------
 # Classification
 # ---------------------------------------------------------------------------
 
-def classify_relationship(
-    context_snippets: List[str],
-    charA: str,
-    charB: str,
-) -> str:
+def classify_relationship(context_snippets: list, charA: str, charB: str) -> str:
     """
-    Classify the relationship type between charA and charB from text snippets.
-
-    Returns
-    -------
-    "friendly" | "hostile" | "neutral"
+    Fast sentiment-based relationship classifier.
+    Returns "friendly", "hostile", or "neutral".
     """
     if not context_snippets:
         return "neutral"
 
-    clf = _get_classifier()
+    votes = []
 
-    # Prepend character names so the NLI model knows which pair to judge
-    enriched = [
-        f"[{charA}] et [{charB}] : {snippet[:MAX_SNIPPET_CHARS]}"
-        for snippet in context_snippets
-    ]
+    for snippet in context_snippets:
+        text = f"{charA} et {charB}: {snippet[:400]}"
+        tokens = _tokenizer(text, return_tensors="pt", truncation=True)
+        output = _model(**tokens)
+        scores = softmax(output.logits.detach().numpy()[0])
+        # Map sentiment to relation
+        sentiment_score = scores[2] - scores[0]  # positive - negative
+        if sentiment_score > 0.1:
+            votes.append(("friendly", abs(sentiment_score)))
+        elif sentiment_score < -0.1:
+            votes.append(("hostile", abs(sentiment_score)))
+        else:
+            votes.append(("neutral", abs(sentiment_score)))
 
-    per_snippet_votes: List[Tuple[str, float]] = []
-
-    try:
-        results = clf(enriched, LABELS_FR, batch_size=4)
-        if not isinstance(results, list):
-            results = [results]
-
-        for result in results:
-            top_label = result["labels"][0]
-            top_score = result["scores"][0]
-            per_snippet_votes.append((top_label, top_score))
-
-    except Exception as exc:
-        print(f"[classify_relationship] Error classifying {charA} ↔ {charB}: {exc}")
+    # Aggregate votes like in original nlp_relation
+    if not votes:
         return "neutral"
-
-    return _aggregate_votes(per_snippet_votes)
+    # Weighted majority vote
+    totals = {"friendly": 0, "hostile": 0, "neutral": 0}
+    for label, weight in votes:
+        totals[label] += weight
+    winner = max(totals, key=totals.get)
+    return winner
 
 
 # ---------------------------------------------------------------------------
@@ -237,36 +223,13 @@ def label_relationships(
     chapter_id: str = "",
     cache: Optional[Dict] = None,
 ) -> Dict[tuple, str]:
-    """
-    Label every co-occurring character pair in a chapter.
-
-    Parameters
-    ----------
-    text          : raw chapter text
-    cooccurrences : Counter{(charA, charB): count}  — from detect_cooccurrences()
-    alias_map     : {surface_form: canonical_name}
-    distance_max  : window size used for context extraction
-    chapter_id    : e.g. "paf0" — part of the cache key
-    cache         : shared dict mutated in-place; keys are (chapter_id, canonA, canonB)
-
-    Returns
-    -------
-    dict{(charA, charB): edge_type_string}
-
-    Cache key: (chapter_id, canonA, canonB) where canonA < canonB (sorted).
-
-    NOTE: Changing `distance_max` does NOT bust the cache — the relationship
-    label for a pair is stable across small window changes. Only invalidate
-    the cache when you change NLI_MODEL or CONFIDENCE_THRESHOLD.
-    """
     edge_labels: Dict[tuple, str] = {}
     new_pairs = 0
 
     for (charA, charB) in cooccurrences:
         canon_pair = tuple(sorted([charA, charB]))
-        cache_key  = (chapter_id,) + canon_pair
+        cache_key = (chapter_id,) + canon_pair
 
-        # Cache hit — skip inference entirely
         if cache is not None and cache_key in cache:
             edge_labels[(charA, charB)] = cache[cache_key]
             continue
