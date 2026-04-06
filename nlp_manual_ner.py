@@ -138,135 +138,8 @@ ASIMOV_LOCATIONS = {
     "Palais Impérial": ["Palais"],
 }
 
-# =============================================================================
-# FRENCH COMMON WORDS — capitalized words to ignore during heuristic scan
-# (sentence starters, common nouns that can appear capitalized, etc.)
-# =============================================================================
-
-_FRENCH_COMMON_CAPS = {
-    # Common sentence-starting words / false positives
-    "Le", "La", "Les", "Un", "Une", "Des", "Du", "De", "Ce", "Ces",
-    "Cette", "Il", "Elle", "Ils", "Elles", "On", "Nous", "Vous",
-    "Je", "Tu", "Mon", "Ma", "Mes", "Ton", "Ta", "Tes", "Son", "Sa",
-    "Ses", "Notre", "Votre", "Leur", "Leurs", "Qui", "Que", "Quoi",
-    "Quel", "Quelle", "Quels", "Quelles", "Où", "Comment", "Pourquoi",
-    "Quand", "Si", "Mais", "Ou", "Et", "Donc", "Or", "Ni", "Car",
-    "Puis", "Alors", "Aussi", "Bien", "Comme", "Dans", "En", "Par",
-    "Pour", "Sans", "Sous", "Sur", "Avec", "Vers", "Chez", "Tout",
-    "Tous", "Toute", "Toutes", "Autre", "Autres", "Même", "Très",
-    "Plus", "Moins", "Peu", "Trop", "Assez", "Encore", "Jamais",
-    "Rien", "Personne", "Chaque", "Plusieurs", "Certain", "Certains",
-    "Certaine", "Certaines", "Aucun", "Aucune", "Nul", "Nulle",
-    "Tel", "Telle", "Tels", "Telles",
-    # Common capitalized words that aren't names
-    "Chapitre", "Partie", "Livre", "Page", "Note", "Table",
-    "Section", "Appendice", "Préface", "Introduction", "Conclusion",
-    "Premier", "Première", "Deuxième", "Troisième",
-    # Asimov-specific non-name capitalized words
-    "Empire", "Galaxie", "Galactique", "Fondation", "Encyclopaedia",
-    "Galactica", "Université", "Bibliothèque", "Palais",
-    "Mathématicien", "Psychohistoire",
-    # Verbs / adjectives that may appear capitalized at sentence start
-    "Après", "Avant", "Durant", "Pendant", "Depuis",
-    "Cela", "Ceci", "Celui", "Celle", "Ceux", "Celles",
-    "Voici", "Voilà", "Oui", "Non", "Peut", "Doit",
-    "Faut", "Fait", "Dit", "Bon", "Mal",
-    # Days / months (French capitalizes less, but just in case)
-    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-    "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche",
-    # Imperative / conjugated verbs commonly appearing capitalized in dialogue
-    "Continuez", "Espérons", "Attendez", "Regardez", "Allez", "Venez",
-    "Arrêtez", "Écoutez", "Prenez", "Entrez", "Sortez", "Restez",
-    "Montrez", "Laissez", "Suivez", "Voyez", "Dites", "Parlez",
-    "Permettez", "Pensez", "Croyez", "Savez", "Voulez", "Pouvez",
-    "Devez", "Faites", "Donnez", "Tenez", "Allons", "Voyons",
-    "Essayez", "Supposez", "Imaginez", "Comprenez", "Excusez",
-    "Pardonnez", "Cherchez", "Trouvez", "Passez", "Revenez",
-    "Connaissez", "Expliquez", "Racontez", "Appelez", "Asseyez",
-    "Répondez", "Demandez", "Reprenez", "Cessez", "Finissez",
-    # Common nouns that appear capitalized mid-sentence in Asimov novels
-    "Soleil", "Astronef", "Société", "Congés", "Secteur", "Planète",
-    "Monde", "Ciel", "Dôme", "Terre", "Science", "Histoire",
-    "Docteur", "Monsieur", "Madame", "Mademoiselle", "Seigneur",
-    "Majesté", "Excellence", "Altesse", "Maître",
-    "Empereur", "Impératrice", "Impérial", "Ministre", "Conseil",
-    "Gouverneur", "Gouvernement", "République", "Royaume",
-    "Robot", "Robots", "Robotique", "Spacien", "Spaciens",
-    "Terrien", "Terriens", "Terrienne", "Extérieur", "Extérieurs",
-    # Adjectives / participles that appear capitalized
-    "Étouffant", "Fort", "Exact", "Parfait", "Excellent", "Impossible",
-    "Naturellement", "Évidemment", "Vraiment", "Absolument",
-    "Certainement", "Effectivement", "Probablement", "Simplement",
-    "Précisément", "Justement", "Seulement", "Manifestement",
-    "Apparemment", "Visiblement", "Heureusement", "Malheureusement",
-    # Dialogue exclamations and starters
-    "Merci", "Bravo", "Hélas", "Tiens", "Bah", "Hein",
-    "Voyons", "Enfin", "Bref", "Toutefois", "Cependant",
-    "Néanmoins", "Pourtant", "Autrement", "Finalement",
-    "Écoute", "Regarde", "Attends", "Viens", "Sois",
-    # Additional common French capitalized false positives
-    "Grand", "Petit", "Nouveau", "Nouvelle", "Vieux", "Vieille",
-    "Bonne", "Mauvais", "Mauvaise", "Haut", "Bas",
-    "Ère", "Siècle", "Temps", "Jour", "Nuit",
-    # Asimov demonyms / gentilés (derived from planet names, not character names)
-    "Trantorien", "Trantorians", "Trantorien", "Trantoriens",
-    "Trantorien", "Trantorians", "Trantorienne", "Trantoriennes",
-    "Héliconien", "Héliconiens", "Héliconienne", "Héliconiennes",
-    "Auroran", "Aurorain", "Aurorains", "Auroraine", "Auroraines",
-    "Solarien", "Solariens", "Solarienne", "Solariennes",
-    "Anacreonien", "Anacreoniens",
-    "Terminusien", "Terminusiens",
-    "Gaïen", "Gaïens", "Gaïenne", "Gaïennes",
-    "Kalgannais", "Kalgannaise",
-    # Mycogène / Dahl / other sector demonyms
-    "Mycogénien", "Mycogéniens", "Mycogénienne", "Mycogéniennes",
-    "Dahlite", "Dahlites",
-    "Impériaux", "Impérial", "Impériale", "Impériales",
-    "Exo", "Exos",
-    "Galactos",
-    "New Yorkais",
-    "Médiévaliste", "Médiévalistes",
-    # Asimov-specific capitalized common nouns (not character names)
-    "Sciences", "Empereurs", "Universités", "Couverture",
-    "Toilettes", "Mondes", "Cité", "Cités",
-    "Frère", "Sœur", "Fils", "Filles",
-    "Ancien", "Anciens", "Ancienne", "Anciennes",
-    "Fraternité", "Loi", "Lois",
-    "Médiévale", "Médiévales", "Médiéval",
-    "Maîtresse", "Mairie", "Maire",
-    "Dieu", "Bible", "Fuite",
-    "Ier", "IIe", "IIIe",
-    "Controverse", "Machinchose",
-    "Strelitzia", "Suaverose",
-    "Don", "Quichotte",
-    # Biblical / literary figure names (not novel characters)
-    "Ahab", "J\u00e9hu", "Naboth", "J\u00e9horam", "Jesreel",
-    "J\u00e9hovah", "Baal", "Baalites",
-    "Rois",
-    "York", "New",
-    # Additional common words
-    "Gouttes", "Goutte",
-    "Billibottains", "Billibottain",
-    "Etats", "Junior", "Groupe",
-    "Brunswick", "Jersey", "Bronx", "Alleghanis",
-    # Additional common French words / terms
-    "Caisse", "Congrès", "Déduction", "Guerre", "Traité",
-    "Inévitablement", "Ire", "Mère", "Père",
-    "Médiévalisme", "Nouveaux", "Nouvelle", "Nouveau",
-    "Plastofilm", "Police", "Préfecture",
-    "Zoo", "Ville", "Space", "Island",
-    "Hall", "Building", "City", "Trinité",
-    "Frères", "Sœurs",
-    "San", "Buenos", "Aires", "Francisco",
-    "Yorkais",
-    # Historical / cultural figure names (not novel characters)
-    "Shakespeare", "Churchill", "Heisenberg", "Frankenstein",
-    "Chester", "Jésus", "Manuel",
-}
-
-# Lowercase set for fast membership test
-_COMMON_CAPS_LOWER = {w.lower() for w in _FRENCH_COMMON_CAPS}
+# Capitalization false positives are maintained in antidict.txt and merged
+# into anti_dict at runtime.
 
 # =============================================================================
 # TITLE PATTERNS for regex-based detection
@@ -456,14 +329,13 @@ def _capitalization_scan(text: str,
     """
     Detect unknown proper nouns by capitalization heuristics.
 
-    For each sentence, skip the first word (likely capitalized by grammar),
-    then find capitalized words that:
-      - are not in anti_dict
-      - are not in _FRENCH_COMMON_CAPS
-      - are not already in the gazetteer (known_names)
-      - are longer than 1 character
-      - are not ALL CAPS
-      - do NOT appear in lowercase form elsewhere in the text
+        For each sentence, skip the first word (likely capitalized by grammar),
+        then find capitalized words that:
+            - are not in anti_dict
+            - are not already in the gazetteer (known_names)
+            - are longer than 1 character
+            - are not ALL CAPS
+            - do NOT appear in lowercase form elsewhere in the text
 
     Consecutive capitalized tokens are grouped into multi-word names
     (e.g., "Alban Wellis" → single entity).
@@ -514,7 +386,6 @@ def _capitalization_scan(text: str,
                 continue
 
             if (_CAP_WORD.fullmatch(clean)
-                    and clean.lower() not in _COMMON_CAPS_LOWER
                     and clean.lower() not in anti_dict
                     and clean.lower() not in lowercase_vocab
                     and clean.lower() not in known_lower
@@ -528,7 +399,6 @@ def _capitalization_scan(text: str,
                     next_clean = next_token.rstrip(".,;:!?»\"')")
                     next_clean = next_clean.lstrip("«\"'(")
                     if (_CAP_WORD.fullmatch(next_clean)
-                            and next_clean.lower() not in _COMMON_CAPS_LOWER
                             and next_clean.lower() not in anti_dict
                             and next_clean.lower() not in lowercase_vocab
                             and next_clean.lower() not in known_lower
