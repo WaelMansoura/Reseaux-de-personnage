@@ -222,6 +222,67 @@ def alias_dictionary(groups: list) -> dict:
     return alias_map
 
 
+def apply_gazetteer_aliases(alias_map: dict,
+                             gazetteer_characters: dict,
+                             lp: Counter | None = None) -> dict:
+    """
+    Force gazetteer groupings onto the alias map produced by alias_dictionary().
+
+    For each {canonical: [alias, ...]} group in gazetteer_characters, all
+    observed aliases are remapped to the same winning canonical.
+
+    Canonical selection: the current alias-map canonical that "owns" the most
+    LP weight (sum of raw counts for all surface forms pointing to it).  This
+    means "Cléon" beats "Cleon I" when the French text never uses the English
+    spelling, and "Elijah Baley" beats "Lije" because "Baley" and "Elijah"
+    are already merged into it with a high combined count.
+
+    Call order:
+        alias_dictionary() → apply_gazetteer_aliases() → apply_manual_aliases()
+
+    Args:
+        alias_map:             {surface: auto_canonical} from alias_dictionary()
+        gazetteer_characters:  {canonical: [alias, ...]} e.g. ASIMOV_CHARACTERS
+        lp:                    raw Counter {surface: count} used to break ties
+
+    Returns:
+        dict: patched alias map
+    """
+    patched = dict(alias_map)
+
+    for gaz_canonical, gaz_aliases in gazetteer_characters.items():
+        all_forms = [gaz_canonical] + list(gaz_aliases)
+
+        # Collect distinct current canonicals and their total LP weight
+        current_canonicals: dict[str, int] = {}
+        for form in all_forms:
+            if form in patched:
+                canon = patched[form]
+                if canon not in current_canonicals:
+                    weight = (
+                        sum(lp.get(f, 0) for f, c in patched.items() if c == canon)
+                        if lp is not None else 0
+                    )
+                    current_canonicals[canon] = weight
+
+        if len(current_canonicals) <= 1:
+            continue  # already consistent or nothing observed in this chapter
+
+        best = max(current_canonicals, key=lambda c: current_canonicals[c])
+        displaced = {c for c in current_canonicals if c != best}
+
+        # Remap everything that pointed to a displaced canonical
+        for k in list(patched):
+            if patched[k] in displaced:
+                patched[k] = best
+        # Also directly remap any form that is listed in the gazetteer group
+        for form in all_forms:
+            if form in patched:
+                patched[form] = best
+
+    return patched
+
+
 def apply_manual_aliases(alias_map: dict, manual_overrides: dict) -> dict:
     """
     Overlay a small set of hand-crafted aliases on top of an auto-generated
