@@ -557,7 +557,7 @@ function SlideAliases({ page, total }) {
   { name: 'Harinder', count: 3, group: 3 }];
 
   return (
-    <Frame label="08 · Stage 2 of 5" page={page} total={total}>
+    <Frame label="07 · Stage 2 of 5" page={page} total={total}>
       <Eyebrow>Stage 2 — Alias Resolution</Eyebrow>
       <SlideTitle>“Hari”, “Seldon”, “Hari Seldon” are <em>one</em> person.</SlideTitle>
 
@@ -910,33 +910,42 @@ function SlideResults({ page, total }) {
       <Eyebrow>Results</Eyebrow>
       <SlideTitle>Two novels, 34 chapter graphs, one viewer.</SlideTitle>
 
-      <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SPACING.sectionGap, flex: 1 }}>
+      <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: SPACING.sectionGap }}>
         <NovelCard
           code="paf"
           title="Prélude à Fondation"
           author="Isaac Asimov · 1988"
           stats={[
-          ['Chapters', '— '],
-          ['Avg. characters / chapter', '— '],
-          ['Total edges', '— '],
+          ['Chapters', '19'],
+          ['Avg. characters / chapter', '6'],
+          ['Total edges', '~205'],
           ['Recurring protagonist', 'Hari Seldon']]
           } />
-        
+
         <NovelCard
           code="lca"
           title="Les Cavernes d'Acier"
           author="Isaac Asimov · 1953"
           stats={[
-          ['Chapters', '— '],
-          ['Avg. characters / chapter', '— '],
-          ['Total edges', '— '],
+          ['Chapters', '18'],
+          ['Avg. characters / chapter', '5'],
+          ['Total edges', '~174'],
           ['Recurring protagonist', 'Elijah Baley']]
           } />
-        
+
       </div>
 
-      <div style={{ marginTop: 32, fontFamily: FONT_MONO, fontSize: TYPE_SCALE.micro, color: COLORS.inkSoft }}>
-        ⓘ Numerical results to be filled in from the IEEE final report.
+      <div style={{ marginTop: SPACING.sectionGap, border: `1px solid ${COLORS.rule}`, padding: '28px 36px', background: COLORS.bgAlt, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: SPACING.sectionGap }}>
+        {[
+          ['Pipeline runtime', '470.50 s (on default google colab GPU)'],
+          ['Entries processed', '37'],
+          ['Edge labels', `hostile · 239 | friendly · 58 | neutral · 82`],
+        ].map(([k, v], i) =>
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8, borderLeft: i > 0 ? `1px solid ${COLORS.rule}` : 'none', paddingLeft: i > 0 ? 36 : 0 }}>
+            <span style={{ fontFamily: FONT_MONO, fontSize: TYPE_SCALE.micro, color: COLORS.inkSoft, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{k}</span>
+            <span style={{ fontFamily: FONT_SERIF, fontSize: TYPE_SCALE.small, color: COLORS.ink }}>{v}</span>
+          </div>
+        )}
       </div>
     </Frame>);
 
