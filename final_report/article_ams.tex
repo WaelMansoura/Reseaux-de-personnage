@@ -362,6 +362,47 @@ are few (Seldon/Dors, Baley/Daneel) and their positive valence must
 overcome the negative sentiment accumulated across the rest of the
 chapter's snippets in the weighted vote.
 
+\subsection{Window-size ablation}
+
+\texttt{distance\_max} sets the token radius within which two
+character mentions count as co-occurring. A wider window raises
+edge recall but admits ambient pairs that never truly interact.
+We re-ran the full pipeline at three window sizes and submitted
+each to the Kaggle leaderboard for the AMS competition.
+Table~\ref{tab:dmax} reports the results.
+
+\begin{table}[h]
+\centering
+\caption{Effect of \texttt{distance\_max} on Kaggle score.
+All other parameters fixed; submissions made on the same day to
+control for leaderboard variance.}
+\label{tab:dmax}
+\setlength{\tabcolsep}{6pt}
+\small
+\begin{tabular}{cc}
+\toprule
+\textbf{\texttt{distance\_max} (tokens)} & \textbf{Kaggle score} \\
+\midrule
+25  & 0.58808 \\
+75  & 0.57708 \\
+150 & \textbf{0.59511} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All three settings fall within $\Delta \approx 0.018$, so the
+pipeline is not strongly sensitive to this parameter. The
+relationship is non-monotonic: 25 tokens beats 75, and 150 beats
+both. The dip at 75 is consistent with a window too wide to
+preserve dialogic locality but too narrow to bridge a paragraph
+of intervening narration. The 150-token setting, used for the
+final submission, gives the best score, suggesting that
+interactions in Asimov's prose typically span one to two
+paragraphs before the second character is named again. Values
+above 150 were not tested due to leaderboard submission limits;
+a sweep over 50/100/150/200/300 against a held-out gold annotation
+would give a tighter estimate.
+
 \subsection{Qualitative validation}
 
 The utility \texttt{print\_validation\_report} in \texttt{nlp\_relation.py}
