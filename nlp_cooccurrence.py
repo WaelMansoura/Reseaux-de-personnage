@@ -72,6 +72,7 @@ def detect_cooccurrences(text, character_counts, distance_max=25):
         for a, b in combinations(sorted(set(present_chars)), 2):
             original_a = lowercase_to_original[a]
             original_b = lowercase_to_original[b]
-            cooccurrences[(original_a, original_b)] += 1
+            pair = tuple(sorted([original_a, original_b]))
+            cooccurrences[pair] += 1
 
     return cooccurrences
