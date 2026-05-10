@@ -11,7 +11,7 @@ Pipeline d'extraction de personnages et de relations à partir de textes frança
 5. **Construction du graphe** — agrégation NetworkX (`nlp_graph.py`).
 6. **Visualisation web** — export PyVis HTML interactif (`nlp_visualize_web.py`).
 
-Orchestration : [`main`](main).
+Orchestration : [`main.ipynb`](main.ipynb).
 
 ## Documentation des modules
 

@@ -4,7 +4,7 @@
 
 Extraire les entités personnages (PER) et lieux (LOC) de romans français **sans** aucun modèle d'IA. Pures règles, regex, gazetteers. Conçu comme remplacement direct du NER spaCy/transformer, retournant exactement le même format `list[tuple[str, str]]` consommé par `nlp_extract_characters.count_entities()`.
 
-Utilisé comme première étape du pipeline dans `main` — remplace le NER d'ensemble IA du notebook original.
+Utilisé comme première étape du pipeline dans `main.ipynb` — remplace le NER d'ensemble IA du notebook original.
 
 ## Organisation du module
 
@@ -188,7 +188,7 @@ Ordre du pipeline :
 
 ## Utilisation dans le notebook
 
-Depuis la cellule `251253d0` de `main` :
+Depuis la cellule `251253d0` de `main.ipynb` :
 
 ```python
 raw_entities = manual_extract_entities(

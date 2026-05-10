@@ -8,7 +8,7 @@ Pont entre la sortie NER brute (`list[tuple[str, str]]`) et les étapes en aval 
 2. **Comptage d'entités** — convertir une liste de paires `(text, label)` en `Counter`.
 3. **Filtrage** — séparer en personnes (LP) vs lieux (LL), avec une règle de validité partagée qui rejette acronymes, tokens à trait d'union et chaînes ultra-courtes.
 
-Dans `main` seules `count_entities`, `filter_persons`, `filter_locations` et `is_valid_entity` sont utilisées — le chemin spaCy est dormant puisque le NER par règles le remplace.
+Dans `main.ipynb` seules `count_entities`, `filter_persons`, `filter_locations` et `is_valid_entity` sont utilisées — le chemin spaCy est dormant puisque le NER par règles le remplace.
 
 ## Chargement paresseux du modèle
 
