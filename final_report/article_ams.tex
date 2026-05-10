@@ -60,8 +60,6 @@ zero-shot classification via Natural Language Inference (NLI)~\cite{Yin2019,Laur
 but practical deployments face severe runtime constraints on
 consumer-grade hardware.
 
-Labatut and Bost (2019) surveyed character network extraction across dozens of literary corpora, finding that co-occurrence-based methods dominate in practice despite their inability to distinguish relation types~\cite{Labatut2019}. Dekker et al. (2019) evaluated NER tools specifically for social network extraction from novels and found that out-of-domain errors on proper nouns (the dominant failure mode) are resistant to ensemble voting when all models share the same training distribution~\cite{Dekker2019}. These findings directly motivated both of our iterative design choices: rule-based NER to escape shared model bias, and a sentiment proxy to avoid the annotation requirement that supervised relation classifiers demand.
-
 This paper makes four contributions. First, a complete modular pipeline from
 raw French text to typed GraphML character networks. Second, a documented
 iterative methodology comparing multi-model NER versus rule-based NER and
@@ -70,6 +68,76 @@ trade-offs for each. Third, a systematic error characterisation of every
 module. Fourth, empirical results on 37 chapters of Asimov fiction showing
 that hostile interactions dominate the labelled corpus, a finding
 consistent with the novels' genres.
+
+%----------------------------------------------------------------------
+\section{État de l'art}
+%----------------------------------------------------------------------
+
+\subsection{Co-occurrence networks}
+
+The simplest way to link two characters is to check whether they appear
+close together in the text. Moretti (2005) applied this idea to drama,
+where shared stage presence makes interaction explicit~\cite{Moretti2005}.
+Elson et al.\ (2010) brought it to novels, using dialogue exchanges as
+the link criterion~\cite{Elson2010}. Labatut and Bost (2019) surveyed the
+field and found that co-occurrence remains the dominant approach because it
+needs no labelled data~\cite{Labatut2019}. The main design choice is how
+wide to set the window: Grayson et al.\ (2016) found that 20--300 words
+covers most interactions in 19th-century prose~\cite{Grayson2016}.
+The known weakness is over-linking: if two characters share a scene without
+speaking to each other, a wide window still draws an edge between them.
+
+\subsection{Character detection in novels}
+
+Standard NER tools are trained on news text, so they struggle with
+literary fiction. Novels introduce invented names (\textit{Trantor},
+\textit{Terminus}), refer to characters by title (\textit{l'Empereur},
+\textit{The Director}), and use long chains of pronouns and nicknames
+for the same person. Vala et al.\ (2015) documented these problems across
+many tools and showed that verb-argument patterns can recover character
+mentions that name-matching alone misses~\cite{Vala2015}. Dekker et al.\
+(2019) ran a systematic comparison of four tools on 40 novels: the best
+result was F1~=~0.886 on \textit{Harry Potter}; the worst was 0.348 on
+\textit{Gardens of the Moon}~\cite{Dekker2019}. Crucially, errors on
+place names (tagged as persons) survived majority voting because every
+model made the same mistake, having trained on similar data.
+That result motivated our switch to a rule-based approach.
+
+\subsection{Relation typing}
+
+Three families of approaches exist for labelling an edge as
+friendly, hostile, or neutral.
+
+Supervised classifiers~\cite{Devlin2019} give the best accuracy but
+require hand-labelled training examples. No such dataset exists for
+French literary fiction, so this path was closed to us from the start.
+
+Zero-shot NLI asks a language model whether a text snippet entails a
+given description (e.g., ``these two characters are enemies'') without
+any task-specific training~\cite{Yin2019,Laurer2022}. It works, but
+it is slow: our tests ran for 6--8 hours on CPU for both mDeBERTa-v3
+and distilcamembert-base-nli, which made re-running experiments impractical.
+
+Using sentiment as a proxy is the oldest approach, going back to
+Shakespeare network studies~\cite{Nalisnick2013}. The idea is simple:
+if the text around two characters reads as positive, the relation is
+friendly; if negative, hostile. The drawback is that literary prose does
+not work like social-media text: irony, indirect speech, and polite
+disagreement all produce weak or misleading sentiment scores~\cite{Labatut2019}.
+LLMs handle nuance better, but free-tier quotas ran out before we could
+process all 37 chapters~\cite{Wei2023}.
+
+\subsection{French literary NLP}
+
+For French, CamemBERT~\cite{Martin2020} is the reference model, beating
+multilingual alternatives (XLM-R, mBERT) by over 10 points on NER and NLI
+in supervised settings. The BookNLP-fr project is building a dedicated
+French literary pipeline using the \textit{Democrat} corpus of 19th-century
+novels~\cite{Bechet2024}. Long-LitBank-fr provides coreference annotations
+for three full-length French novels (285,176 tokens)~\cite{LongLitBankFr2025}.
+Neither dataset includes relation-type labels. No annotated corpus exists
+for friendly/hostile/neutral character relations in French fiction, which
+is why we could not train or calibrate a supervised classifier.
 
 
 %----------------------------------------------------------------------
@@ -601,15 +669,6 @@ D.\ K.\ Elson, N.\ Dames, and K.\ R.\ McKeown,
 ``Extracting social networks from literary fiction,''
 in \textit{Proc.\ ACL}, 2010, pp.~138--147.
 
-\bibitem{Honnibal2020}
-M.\ Honnibal \textit{et al.},
-``spaCy: Industrial-strength NLP in Python,''
-Zenodo, 2020.
-
-\bibitem{Qi2020stanza}
-P.\ Qi \textit{et al.},
-``Stanza: A Python NLP toolkit for many human languages,''
-in \textit{Proc.\ ACL Demo}, 2020, pp.~101--108.
 
 \bibitem{Devlin2019}
 J.\ Devlin \textit{et al.},
@@ -626,10 +685,6 @@ M.\ Laurer \textit{et al.},
 ``Less annotating, more classifying,''
 \textit{Political Analysis}, vol.~31, no.~1, pp.~1--13, 2022.
 
-\bibitem{He2013}
-H.\ He, D.\ Barbosa, and G.\ Kondrak,
-``Identification of speakers in novels,''
-in \textit{Proc.\ ACL}, 2013, pp.~1312--1320.
 
 \bibitem{Labatut2019}
 V.\ Labatut and X.\ Bost,
@@ -645,6 +700,46 @@ in \textit{Proc.\ DHd}, 2019.
 F.\ Barbieri \textit{et al.},
 ``TweetEval: Unified benchmark and comparative evaluation for tweet classification,''
 in \textit{Proc.\ EMNLP Findings}, 2020, pp.~1644--1650.
+
+\bibitem{Grayson2016}
+S.\ Grayson \textit{et al.},
+``The sense and sensibility of different sliding windows in constructing
+co-occurrence networks from literature,''
+in \textit{Proc.\ Digital Humanities}, 2016.
+
+\bibitem{Vala2015}
+H.\ Vala \textit{et al.},
+``Mr.\ Bennet, his coachman, and the Archbishop walk into a bar but only
+one of them gets recognized: On the difficulty of detecting characters
+in literary texts,''
+in \textit{Proc.\ EMNLP}, 2015, pp.~769--778.
+
+
+\bibitem{Nalisnick2013}
+E.\ T.\ Nalisnick and H.\ S.\ Baird,
+``Character-to-character sentiment analysis in Shakespeare's plays,''
+in \textit{Proc.\ ACL}, 2013, pp.~479--483.
+
+\bibitem{Wei2023}
+J.\ Wei \textit{et al.},
+``Revisiting large language models as zero-shot relation extractors,''
+in \textit{Proc.\ EMNLP Findings}, 2023, pp.~6877--6892.
+
+\bibitem{Martin2020}
+L.\ Martin \textit{et al.},
+``CamemBERT: A tasty French language model,''
+in \textit{Proc.\ ACL}, 2020, pp.~7203--7219.
+
+\bibitem{Bechet2024}
+F.\ Béchet \textit{et al.},
+``BookNLP-fr: French part of the Multilingual BookNLP project,''
+Observatoire des humanités numériques, ENS Paris, 2024.
+
+\bibitem{LongLitBankFr2025}
+A.\ Landragin \textit{et al.},
+``The elephant in the coreference room: Resolving coreference in
+full-length French fiction works,''
+in \textit{Proc.\ CRAC Workshop, ACL}, 2025.
 
 \end{thebibliography}
 
