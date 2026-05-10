@@ -1,95 +1,15 @@
 import re
-import functools
-from collections import Counter, defaultdict
-from typing import Dict, List, Optional, Tuple
+from collections import Counter
+from typing import Dict, List, Optional
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from scipy.special import softmax
 
-import numpy as np
-
-# Load once (like your NLI model)
 _tokenizer = AutoTokenizer.from_pretrained("cardiffnlp/twitter-xlm-roberta-base-sentiment")
 _model = AutoModelForSequenceClassification.from_pretrained("cardiffnlp/twitter-xlm-roberta-base-sentiment")
 
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-# Much faster than zero-shot NLI
-EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-
-# Short semantic prototypes for each relationship type.
-# These are used as label anchors in embedding space.
-LABEL_PROMPTS = {
-    "friendly": [
-        "Two characters are friends.",
-        "They trust and support each other.",
-        "They are kind to one another.",
-    ],
-    "hostile": [
-        "Two characters are enemies.",
-        "They hate or oppose each other.",
-        "They are in conflict or hostile.",
-    ],
-    "neutral": [
-        "Two characters have no clear relationship.",
-        "They simply appear together without strong feelings.",
-        "Their interaction is ordinary or ambiguous.",
-    ],
-}
-
-CONFIDENCE_THRESHOLD = 0.45
 MAX_CONTEXTS_PER_PAIR = 5
 MAX_SNIPPET_CHARS = 400
-
-
-# ---------------------------------------------------------------------------
-# Embedding model loading
-# ---------------------------------------------------------------------------
-
-@functools.lru_cache(maxsize=1)
-def _get_embedder():
-    """
-    Load the sentence embedding model once and reuse it.
-    """
-    from sentence_transformers import SentenceTransformer
-    print(f"[nlp_relation] Loading embedding model: {EMBEDDING_MODEL}")
-    model = SentenceTransformer(EMBEDDING_MODEL)
-    print("[nlp_relation] Embedding model ready.")
-    return model
-
-
-@functools.lru_cache(maxsize=1)
-def _get_label_embeddings() -> Tuple[np.ndarray, List[str]]:
-    """
-    Precompute embeddings for the relationship labels.
-    Returns:
-        (label_matrix, label_names)
-    """
-    model = _get_embedder()
-
-    label_names = ["friendly", "hostile", "neutral"]
-    prompts = []
-    prompt_owner = []
-
-    for label in label_names:
-        for prompt in LABEL_PROMPTS[label]:
-            prompts.append(prompt)
-            prompt_owner.append(label)
-
-    emb = model.encode(prompts, convert_to_numpy=True, normalize_embeddings=True)
-
-    # Average prompt embeddings per label
-    label_vectors = []
-    for label in label_names:
-        idxs = [i for i, owner in enumerate(prompt_owner) if owner == label]
-        vec = emb[idxs].mean(axis=0)
-        vec = vec / (np.linalg.norm(vec) + 1e-12)
-        label_vectors.append(vec)
-
-    label_matrix = np.vstack(label_vectors)  # shape: (3, dim)
-    return label_matrix, label_names
 
 
 # ---------------------------------------------------------------------------
@@ -146,30 +66,6 @@ def extract_cooccurrence_contexts(
                     return contexts
 
     return contexts
-
-
-# ---------------------------------------------------------------------------
-# Aggregation
-# ---------------------------------------------------------------------------
-
-def _aggregate_votes(votes: List[Tuple[str, float]]) -> str:
-    """
-    Confidence-weighted majority vote over per-snippet similarity results.
-    """
-    if not votes:
-        return "neutral"
-
-    scores: Dict[str, float] = defaultdict(float)
-    for label, confidence in votes:
-        scores[label] += confidence
-
-    winner = max(scores, key=scores.get)
-    winner_score = scores[winner] / len(votes)
-
-    if winner_score < CONFIDENCE_THRESHOLD:
-        return "neutral"
-
-    return winner
 
 
 # ---------------------------------------------------------------------------
@@ -265,9 +161,6 @@ def print_validation_report(
     """
     Print the top-n hostile and top-n friendly edges with a driving snippet each.
     Run this after the first full pass to spot-check label quality.
-
-    If labels look wrong, try raising CONFIDENCE_THRESHOLD in this module
-    or switching NLI_MODEL to "cmarkea/distilcamembert-base-nli".
     """
     hostile  = [(pair, lbl) for pair, lbl in edge_labels.items() if lbl == "hostile"][:n]
     friendly = [(pair, lbl) for pair, lbl in edge_labels.items() if lbl == "friendly"][:n]
