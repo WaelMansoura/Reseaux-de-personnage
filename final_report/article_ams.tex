@@ -302,6 +302,73 @@ Sentiment XLM-R & $\approx$8\,min & Sentiment $\neq$ relation  & \textbf{Yes} \\
 \end{tabular}
 \end{table}
 
+\subsection{End-to-end trace: chapter \texttt{paf0}}
+
+Chapter \texttt{paf0} opens \textit{Prélude à Fondation}: Hari
+Seldon arrives on Trantor and is summoned before Emperor Cléon.
+We trace it through every pipeline stage.
+
+The rule-based NER finds eight surface forms: \textit{Seldon}~(33),
+\textit{Cléon}~(18), \textit{Demerzel}~(12), \textit{Sire}~(12),
+\textit{Hari Seldon}~(5), \textit{Eto Demerzel}~(3),
+\textit{Hummin}~(2), \textit{Alban Wellis}~(1). Counts are raw
+mention frequencies before alias merging.
+
+Alias merging collapses \textit{Sire}, \textit{Empereur},
+\textit{l'Empereur}, and \textit{Cléon Ier} into \textit{Cléon};
+\textit{Eto Demerzel} into \textit{Demerzel}; and \textit{Hari
+Seldon} into \textit{Seldon} via the single-to-multi rule.
+Four canonical nodes remain: \textit{Seldon}~(38),
+\textit{Cléon}~(30), \textit{Demerzel}~(15), \textit{Hummin}~(2).
+\textit{Alban Wellis} is discarded (count~1, below
+\texttt{min\_occurrences}~=~2).
+
+At \texttt{distance\_max}~=~150, six pairs survive with weights:
+Seldon--Cléon~(1199), Demerzel--Seldon~(791),
+Demerzel--Cléon~(547), Seldon--Hummin~(300),
+Demerzel--Hummin~(144), Hummin--Cléon~(117). The Seldon--Cléon
+weight is the highest because the encyclopaedic chapter header
+names both characters repeatedly before the throne-room scene
+begins.
+
+Table~\ref{tab:scores} shows per-snippet scores for two pairs.
+For Cléon--Seldon, snippet~1 covers the encyclopaedic header
+describing Cléon's reign and Seldon's birth year; the model scores
+it negative ($s = -0.171$, hostile). Snippets~2 and~3 are
+expository and score near zero ($s = +0.012$, $+0.022$, neutral).
+Hostile weight $0.171$ beats neutral weight $0.034$: the pair is
+labelled hostile. For Demerzel--Hummin, snippet~1 crosses the
+threshold at $s = +0.108$ (friendly); snippet~2 falls below
+($s = -0.047$, neutral). Friendly weight $0.108$ beats neutral
+$0.047$: friendly wins.
+
+\begin{table}[h]
+\centering
+\caption{Per-snippet sentiment scores for two pairs in \texttt{paf0}.
+$s = p_{\text{pos}} - p_{\text{neg}}$; label applies when $|s|>0.1$.}
+\label{tab:scores}
+\setlength{\tabcolsep}{3pt}
+\small
+\begin{tabular}{llrrrc}
+\toprule
+\textbf{Pair} & \textbf{Snip.} & $p_{\text{neg}}$ & $p_{\text{neu}}$ & $p_{\text{pos}}$ & \textbf{Vote} \\
+\midrule
+Cléon--Seldon   & 1 & 0.431 & 0.308 & 0.260 & hostile \\
+                & 2 & 0.382 & 0.224 & 0.394 & neutral \\
+                & 3 & 0.388 & 0.202 & 0.410 & neutral \\
+\midrule
+Demerzel--Hummin & 1 & 0.208 & 0.476 & 0.316 & friendly \\
+                 & 2 & 0.323 & 0.402 & 0.276 & neutral \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Six edges, all retained. Five are hostile; only Demerzel--Hummin
+is friendly. The hostile label on Hummin--Seldon is a
+misclassification: Hummin is Seldon's protector here, but their
+snippets describe tense, conspiratorial dialogue. Sentiment on
+expository prose tracks surface tension, not underlying alliance.
+
 \subsection{Graph statistics}
 
 \begin{table}[h]
@@ -322,6 +389,36 @@ Anti-dictionary      & 1012 entries \\
 \texttt{MAX\_CONTEXTS\_PER\_PAIR} & 5 \\
 \texttt{sentiment threshold $|s|$} & 0.1 \\
 \texttt{FUZZY\_THRESHOLD}      & 88 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Per-chapter graph statistics}
+
+Table~\ref{tab:perstats} reports node and edge counts by book.
+The range is wide: paf9 and lca2 each have one edge; paf15 and
+lca17 reach 30 and 29 respectively. Both books share a median
+of~5 nodes and~8--9 edges, despite PAF's political-intrigue
+structure and LCA's detective format. The three chapters at the
+high end (paf15, paf17, lca17) are all late-book ensemble scenes
+with four or more named characters sharing the same location.
+
+\begin{table}[h]
+\centering
+\caption{Per-chapter graph size by book.}
+\label{tab:perstats}
+\setlength{\tabcolsep}{5pt}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{3}{c}{\textbf{Nodes}} & \multicolumn{3}{c}{\textbf{Edges}} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+\textbf{Book} & \textbf{Min} & \textbf{Med} & \textbf{Max} & \textbf{Min} & \textbf{Med} & \textbf{Max} \\
+\midrule
+PAF (19 ch.) & 2 & 5 & 9  & 1 & 9  & 30 \\
+LCA (18 ch.) & 2 & 5 & 9  & 1 & 8 & 29 \\
+\midrule
+Overall      & 2 & 5 & 9  & 1 & 8  & 30 \\
 \bottomrule
 \end{tabular}
 \end{table}
