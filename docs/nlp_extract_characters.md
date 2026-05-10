@@ -8,7 +8,7 @@ Pont entre la sortie NER brute (`list[tuple[str, str]]`) et les étapes en aval 
 2. **Comptage d'entités** — convertir une liste de paires `(text, label)` en `Counter`.
 3. **Filtrage** — séparer en personnes (LP) vs lieux (LL), avec une règle de validité partagée qui rejette acronymes, tokens à trait d'union et chaînes ultra-courtes.
 
-Dans `nomodels-relations.ipynb` seules `count_entities`, `filter_persons`, `filter_locations` et `is_valid_entity` sont utilisées — le chemin spaCy est dormant puisque le NER par règles le remplace.
+Dans `main` seules `count_entities`, `filter_persons`, `filter_locations` et `is_valid_entity` sont utilisées — le chemin spaCy est dormant puisque le NER par règles le remplace.
 
 ## Chargement paresseux du modèle
 
@@ -30,7 +30,7 @@ Le `global` + vérification `is None` garantit la survie du modèle au `importli
 
 ## `extract_entities(text)` — Chemin spaCy
 
-Exécuté uniquement quand l'utilisateur *veut* le NER IA :
+Exécuté uniquement quand l'utilisateur _veut_ le NER IA :
 
 ```python
 def extract_entities(text: str):
@@ -54,6 +54,7 @@ def count_entities(entities):
 Le `Counter` retourné est indexé par **tuples** `(text, label)`, pas seulement par texte. Important : la même forme de surface peut porter différents labels (`"Cléon"` comme PER et `"Cléon"` comme LOC si une ville porte le nom de l'empereur), et nous voulons les compter indépendamment.
 
 Exemple de sortie :
+
 ```python
 Counter({
     ("Seldon", "PER"): 47,
@@ -80,6 +81,7 @@ def filter_persons(L, anti_dict=None):
 ```
 
 Étapes :
+
 1. Garder seulement `label == "PER"`.
 2. Rejeter via `is_valid_entity()` (longueur, casse, traits d'union).
 3. Normaliser en minuscules et vérifier contre l'`anti_dict` fourni par l'utilisateur.
@@ -131,6 +133,7 @@ Acronymes (`ONU`, `USA`, `GNA`) et dialogues criés (`"NON !"`) sont des faux po
 ### Pourquoi rejeter les traits d'union ?
 
 Deux raisons :
+
 1. Les mots français courants à trait d'union (`peut-être`, `grand-père`) se capitalisent en début de phrase.
 2. La plupart des noms légitimes à trait d'union (`Jean-Pierre`) finissent quand même comme entités multi-mots via l'heuristique de capitalisation, appariées en `["Jean", "Pierre"]`.
 
@@ -189,6 +192,7 @@ Le cache stocke les trois car les changements de paramètres alias/co-occurrence
 ## Exemple détaillé
 
 Entrée depuis `manual_extract_entities` :
+
 ```python
 raw = [
     ("Hari Seldon", "PER"),

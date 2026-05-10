@@ -4,7 +4,7 @@
 
 Extraire les entités personnages (PER) et lieux (LOC) de romans français **sans** aucun modèle d'IA. Pures règles, regex, gazetteers. Conçu comme remplacement direct du NER spaCy/transformer, retournant exactement le même format `list[tuple[str, str]]` consommé par `nlp_extract_characters.count_entities()`.
 
-Utilisé comme première étape du pipeline dans `nomodels-relations.ipynb` — remplace le NER d'ensemble IA du notebook original.
+Utilisé comme première étape du pipeline dans `main` — remplace le NER d'ensemble IA du notebook original.
 
 ## Organisation du module
 
@@ -59,7 +59,7 @@ def _build_word_boundary_re(name: str) -> re.Pattern:
 
 Pourquoi des limites personnalisées : le `\b` Python ne traite pas `é`, `à`, `ü` comme caractères de mot, donc `\bSeldon\b` correspondrait joyeusement à l'intérieur de `Séldoné`. Le lookaround avec classe Unicode explicite corrige ce problème.
 
-Protection contre le chevauchement : suit les positions appariées dans un set pour que `"Hari Seldon"` ne produise *pas aussi* des correspondances séparées `"Hari"` et `"Seldon"` aux mêmes offsets.
+Protection contre le chevauchement : suit les positions appariées dans un set pour que `"Hari Seldon"` ne produise _pas aussi_ des correspondances séparées `"Hari"` et `"Seldon"` aux mêmes offsets.
 
 ```python
 matched_positions = set()
@@ -78,7 +78,7 @@ Le plus difficile : détecter des noms propres inconnus absents du gazetteer. L'
 
 ### Astuce du vocabulaire en minuscules
 
-Idée clé : si un mot apparaît *aussi* en minuscules quelque part dans le texte, il n'est probablement pas un nom propre — c'est juste un mot ordinaire capitalisé en début de phrase.
+Idée clé : si un mot apparaît _aussi_ en minuscules quelque part dans le texte, il n'est probablement pas un nom propre — c'est juste un mot ordinaire capitalisé en début de phrase.
 
 ```python
 def _build_lowercase_vocabulary(text: str) -> set[str]:
@@ -131,7 +131,7 @@ _ROBOT_PATTERN = re.compile(
 )
 ```
 
-Le patron de titre extrait *uniquement* le nom, en abandonnant le titre (donc `"Docteur Sarton"` retourne `"Sarton"`). Le patron robot conserve le préfixe `R.` car il fait partie du nom canonique dans l'univers d'Asimov (`R. Daneel`, `R. Giskard`, `R. Sammy`).
+Le patron de titre extrait _uniquement_ le nom, en abandonnant le titre (donc `"Docteur Sarton"` retourne `"Sarton"`). Le patron robot conserve le préfixe `R.` car il fait partie du nom canonique dans l'univers d'Asimov (`R. Daneel`, `R. Giskard`, `R. Sammy`).
 
 Désactiver le patron robot pour textes non-Asimov :
 
@@ -176,6 +176,7 @@ def manual_extract_entities(text,
 ```
 
 Ordre du pipeline :
+
 1. Fusionner `dynamic_blocklist` dans `anti_dict`.
 2. Construire le gazetteer (personnalisé ou par défaut).
 3. Lancer le scan du gazetteer → `gaz_results`.
@@ -187,7 +188,7 @@ Ordre du pipeline :
 
 ## Utilisation dans le notebook
 
-Depuis la cellule `251253d0` de `nomodels-relations.ipynb` :
+Depuis la cellule `251253d0` de `main` :
 
 ```python
 raw_entities = manual_extract_entities(

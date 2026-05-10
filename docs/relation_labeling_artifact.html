@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Relationship Labeling — How nlp_relation.py works</title>
+    <style>
+      :root {
+        --bg: #0f1115;
+        --panel: #161922;
+        --panel-2: #1c2030;
+        --ink: #e6e8ee;
+        --muted: #9aa3b2;
+        --accent: #c084fc;
+        --accent-2: #818cf8;
+        --friendly: #34d399;
+        --hostile: #f87171;
+        --neutral: #94a3b8;
+        --code-bg: #0b0d12;
+        --border: #262b38;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        line-height: 1.6;
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 56px 28px 96px;
+      }
+      header {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 28px;
+        margin-bottom: 40px;
+      }
+      .eyebrow {
+        color: var(--accent);
+        font-size: 13px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+      h1 {
+        font-size: 38px;
+        line-height: 1.15;
+        margin: 8px 0 12px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        color: var(--muted);
+        font-size: 17px;
+        max-width: 70ch;
+      }
+      h2 {
+        font-size: 24px;
+        margin: 48px 0 14px;
+        letter-spacing: -0.01em;
+        border-left: 3px solid var(--accent);
+        padding-left: 12px;
+      }
+      h3 {
+        font-size: 17px;
+        margin: 28px 0 8px;
+        color: var(--ink);
+      }
+      p {
+        margin: 10px 0;
+      }
+      code,
+      pre {
+        font-family:
+          "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+      }
+      code {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 13px;
+        color: #f0c2ff;
+      }
+      pre {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px 18px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: 1.55;
+        color: #d8dde8;
+      }
+      pre .kw {
+        color: #c084fc;
+      }
+      pre .str {
+        color: #a7f3d0;
+      }
+      pre .num {
+        color: #fbbf24;
+      }
+      pre .com {
+        color: #6b7280;
+        font-style: italic;
+      }
+      pre .fn {
+        color: #93c5fd;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin: 18px 0 8px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px 18px;
+      }
+      .card.friendly {
+        border-left: 4px solid var(--friendly);
+      }
+      .card.hostile {
+        border-left: 4px solid var(--hostile);
+      }
+      .card.neutral {
+        border-left: 4px solid var(--neutral);
+      }
+      .card h4 {
+        margin: 0 0 6px;
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .card.friendly h4 {
+        color: var(--friendly);
+      }
+      .card.hostile h4 {
+        color: var(--hostile);
+      }
+      .card.neutral h4 {
+        color: var(--neutral);
+      }
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .pipeline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .pipeline .step {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 10px;
+        color: var(--ink);
+      }
+      .pipeline .step.active {
+        background: linear-gradient(135deg, #4c1d95, #312e81);
+        border-color: var(--accent-2);
+        color: white;
+      }
+      .pipeline .arrow {
+        color: #4b5563;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 14px 0;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .callout {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin: 16px 0;
+        color: #d8dde8;
+        font-size: 14.5px;
+      }
+      .callout.warn {
+        border-left-color: var(--hostile);
+      }
+
+      .snippet {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        font-style: italic;
+        color: #cbd5e1;
+        font-size: 14.5px;
+        margin: 10px 0;
+      }
+      .snippet .who {
+        display: block;
+        font-style: normal;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 6px;
+      }
+      .snippet.hostile .who {
+        color: var(--hostile);
+      }
+      .snippet.friendly .who {
+        color: var(--friendly);
+      }
+
+      .scoreviz {
+        display: grid;
+        grid-template-columns: 60px 1fr 60px;
+        gap: 10px;
+        align-items: center;
+        margin: 8px 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .bar {
+        height: 8px;
+        background: var(--panel-2);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+      .bar > span {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        border-radius: 4px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin: 14px 0;
+      }
+      .stat {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        text-align: center;
+      }
+      .stat .num {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .stat .lbl {
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      ul {
+        padding-left: 22px;
+      }
+      li {
+        margin: 6px 0;
+      }
+
+      footer {
+        margin-top: 64px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 13px;
+      }
+      a {
+        color: var(--accent-2);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      @media (max-width: 720px) {
+        .grid,
+        .stats {
+          grid-template-columns: 1fr 1fr;
+        }
+        h1 {
+          font-size: 30px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="eyebrow">Module · nlp_relation.py</div>
+        <h1>
+          Labeling character relationships<br />with multilingual sentiment
+        </h1>
+        <p class="lede">
+          How the project turns a co-occurrence pair into one of three edge
+          colors —
+          <span style="color: var(--friendly)">friendly</span>,
+          <span style="color: var(--hostile)">hostile</span>,
+          <span style="color: var(--neutral)">neutral</span> — using
+          <code>cardiffnlp/twitter-xlm-roberta-base-sentiment</code> over French
+          prose.
+        </p>
+      </header>
+
+      <section>
+        <h2>Where it sits in the pipeline</h2>
+        <div class="pipeline">
+          <span class="step">NER</span><span class="arrow">→</span>
+          <span class="step">Aliases</span><span class="arrow">→</span>
+          <span class="step">Co-occurrence</span><span class="arrow">→</span>
+          <span class="step active">Relation labeling</span
+          ><span class="arrow">→</span> <span class="step">Graph</span
+          ><span class="arrow">→</span>
+          <span class="step">HTML viz</span>
+        </div>
+        <p>
+          Only AI-model component of an otherwise rule-based pipeline. Input:
+          pairs of co-occurring characters per chapter. Output:
+          <code>{(charA, charB): "friendly" | "hostile" | "neutral"}</code> dict
+          that drives edge color in <code>all_networks.html</code> (green / red
+          / gray).
+        </p>
+      </section>
+
+      <section>
+        <h2>Three labels, three colors</h2>
+        <div class="grid">
+          <div class="card friendly">
+            <h4>Friendly</h4>
+            <p><code>pos − neg &gt; 0.1</code>. Edge rendered green.</p>
+          </div>
+          <div class="card hostile">
+            <h4>Hostile</h4>
+            <p><code>pos − neg &lt; −0.1</code>. Edge rendered red.</p>
+          </div>
+          <div class="card neutral">
+            <h4>Neutral</h4>
+            <p>Magnitude under 0.1, or zero snippets. Gray.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Step 1 — Pull co-occurrence snippets</h2>
+        <p>
+          For pair <code>(charA, charB)</code>, find every text region where any
+          alias of A sits within <code>distance_max</code> tokens of any alias
+          of B. Cap at <code>MAX_CONTEXTS_PER_PAIR = 5</code> per pair —
+          sentiment classification is the bottleneck.
+        </p>
+
+        <div class="callout">
+          <strong>Why aliases, not just canonical names?</strong>
+          Raw text contains <em>"Empereur"</em>, not <em>"Cléon"</em>.
+          Co-occurrence detection works on canonical forms post-resolution, but
+          here we re-scan source prose to grab exact spans.
+        </div>
+
+        <pre><span class="kw">def</span> <span class="fn">extract_cooccurrence_contexts</span>(text, charA, charB, alias_map,
+                                  distance_max=<span class="num">100</span>,
+                                  max_contexts=MAX_CONTEXTS_PER_PAIR):
+    aliases_A = {sf <span class="kw">for</span> sf, canon <span class="kw">in</span> alias_map.items()
+                 <span class="kw">if</span> canon == charA} | {charA}
+    aliases_B = {sf <span class="kw">for</span> sf, canon <span class="kw">in</span> alias_map.items()
+                 <span class="kw">if</span> canon == charB} | {charB}
+
+    token_matches = list(re.finditer(<span class="str">r"\S+"</span>, text))
+    <span class="com"># walk every (pos_A, pos_B) within distance_max,</span>
+    <span class="com"># return text slice from earliest to latest mention</span></pre>
+
+        <p>
+          Tokenizer here is <code>r"\S+"</code> (whitespace split, keeps
+          punctuation), <em>not</em> <code>r"\w+"</code> like
+          <code>nlp_cooccurrence.py</code>. Reason: token offsets must point at
+          exact source spans so we can re-slice the original text.
+        </p>
+      </section>
+
+      <section>
+        <h2>Step 2 — Score each snippet</h2>
+        <p>
+          Run XLM-RoBERTa sentiment on each snippet. Model returns 3-class
+          softmax:
+          <code>[neg, neu, pos]</code>. Compute
+          <code>sentiment_score = pos − neg</code>.
+        </p>
+
+        <pre><span class="kw">for</span> snippet <span class="kw">in</span> context_snippets:
+    text = <span class="str">f"{charA} et {charB}: {snippet[:400]}"</span>
+    tokens = _tokenizer(text, return_tensors=<span class="str">"pt"</span>, truncation=<span class="kw">True</span>)
+    output = _model(**tokens)
+    scores = softmax(output.logits.detach().numpy()[<span class="num">0</span>])
+    sentiment_score = scores[<span class="num">2</span>] - scores[<span class="num">0</span>]   <span class="com"># pos − neg</span>
+
+    <span class="kw">if</span>   sentiment_score &gt;  <span class="num">0.1</span>: votes.append((<span class="str">"friendly"</span>, abs(sentiment_score)))
+    <span class="kw">elif</span> sentiment_score &lt; -<span class="num">0.1</span>: votes.append((<span class="str">"hostile"</span>,  abs(sentiment_score)))
+    <span class="kw">else</span>:                       votes.append((<span class="str">"neutral"</span>,  abs(sentiment_score)))</pre>
+
+        <h3>Two non-obvious choices</h3>
+
+        <div class="callout">
+          <strong>Prefix <code>f"{charA} et {charB}: "</code>.</strong>
+          Anchors model attention on the pair's interaction, not the scene's
+          mood. Joyful festival where two enemies meet by chance must
+          <em>not</em> read as friendly. Prefix forces judgment of the
+          <strong>pair</strong>, not the prose.
+        </div>
+
+        <div class="callout">
+          <strong>±0.1 dead band.</strong>
+          Captures model confidence. Strong positive
+          <code>[0.05, 0.10, 0.85]</code> → score 0.80 → friendly. Weak signal
+          <code>[0.30, 0.40, 0.30]</code> → score 0.00 → neutral. Avoids
+          labeling on noise.
+        </div>
+
+        <h3>Visual: how a snippet's softmax becomes a label</h3>
+
+        <div
+          style="
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px;
+          "
+        >
+          <div class="scoreviz">
+            <span>neg</span>
+            <div class="bar">
+              <span
+                style="left: 0; width: 5%; background: var(--hostile)"
+              ></span>
+            </div>
+            <span>0.05</span>
+          </div>
+          <div class="scoreviz">
+            <span>neu</span>
+            <div class="bar">
+              <span
+                style="left: 0; width: 10%; background: var(--neutral)"
+              ></span>
+            </div>
+            <span>0.10</span>
+          </div>
+          <div class="scoreviz">
+            <span>pos</span>
+            <div class="bar">
+              <span
+                style="left: 0; width: 85%; background: var(--friendly)"
+              ></span>
+            </div>
+            <span>0.85</span>
+          </div>
+          <p style="margin-top: 14px; color: var(--muted); font-size: 13.5px">
+            <code>pos − neg = 0.80</code> &nbsp;→&nbsp;
+            <strong style="color: var(--friendly)">friendly</strong> with weight
+            0.80.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Step 3 — Weighted majority vote</h2>
+        <p>
+          Each snippet votes once. Vote weight =
+          <code>abs(sentiment_score)</code> — confident snippets outweigh
+          hesitant ones. Sum weights per label; <code>max</code> wins.
+        </p>
+
+        <pre>totals = {<span class="str">"friendly"</span>: <span class="num">0</span>, <span class="str">"hostile"</span>: <span class="num">0</span>, <span class="str">"neutral"</span>: <span class="num">0</span>}
+<span class="kw">for</span> label, weight <span class="kw">in</span> votes:
+    totals[label] += weight
+winner = max(totals, key=totals.get)</pre>
+
+        <p>
+          One confident hostile (weight 0.8) beats three weak neutrals (0.05
+          each). Counts of votes don't matter — total weight does.
+        </p>
+      </section>
+
+      <section>
+        <h2>Step 4 — Cache by (chapter, sorted pair)</h2>
+        <p>
+          Sentiment inference is the slow step. Cache key:
+          <code>(chapter_id, *sorted([charA, charB]))</code>.
+        </p>
+        <ul>
+          <li>
+            <strong>Per chapter</strong> — same pair has different dynamics
+            across the book (Cléon ↔ Demerzel evolves).
+          </li>
+          <li>
+            <strong>Sorted pair</strong> — collapses <code>(A,B)</code> and
+            <code>(B,A)</code> to one entry.
+          </li>
+          <li>
+            <strong>Distance-invariant</strong> — cache stores final labels, not
+            snippet scores. Changing <code>distance_max</code> does
+            <em>not</em> require flushing.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Real output, chapter <code>paf0</code></h2>
+        <div class="stats">
+          <div class="stat">
+            <div class="num">6</div>
+            <div class="lbl">edges</div>
+          </div>
+          <div class="stat">
+            <div class="num" style="color: var(--friendly)">1</div>
+            <div class="lbl">friendly</div>
+          </div>
+          <div class="stat">
+            <div class="num" style="color: var(--hostile)">5</div>
+            <div class="lbl">hostile</div>
+          </div>
+          <div class="stat">
+            <div class="num" style="color: var(--neutral)">0</div>
+            <div class="lbl">neutral</div>
+          </div>
+        </div>
+
+        <div class="snippet hostile">
+          <span class="who">Cléon ↔ Demerzel · hostile</span>
+          « Cléon était empereur depuis dix ans à peine… »
+        </div>
+        <div class="snippet friendly">
+          <span class="who">Demerzel ↔ Hummin · friendly</span>
+          « Hummin esquissa un haussement d'épaules. « Eto Demerzel… »
+        </div>
+      </section>
+
+      <section>
+        <h2>Known biases</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Issue</th>
+              <th>Effect</th>
+              <th>Mitigation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Hostile bias</td>
+              <td>
+                239 hostile vs 58 friendly across 37 chapters. Dramatic French
+                prose registers negative even for allies.
+              </td>
+              <td>
+                Per-chapter calibration; raise threshold; switch to NLI with
+                friendly prompts.
+              </td>
+            </tr>
+            <tr>
+              <td>Single-snippet pairs</td>
+              <td>One ambiguous snippet decides the label. Fragile.</td>
+              <td>Drop to neutral when only 1 snippet and weight &lt; X.</td>
+            </tr>
+            <tr>
+              <td>French-only prefix</td>
+              <td><code>"et"</code> hardcoded.</td>
+              <td>Swap to <code>"and"</code> for English corpora.</td>
+            </tr>
+            <tr>
+              <td>Sarcasm / irony blind</td>
+              <td>Friendly insults between allies read as hostile.</td>
+              <td>No good fix at this model size.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Performance</h2>
+        <div class="stats">
+          <div class="stat">
+            <div class="num">~500 MB</div>
+            <div class="lbl">model download</div>
+          </div>
+          <div class="stat">
+            <div class="num">470 s</div>
+            <div class="lbl">37 chapters cold</div>
+          </div>
+          <div class="stat">
+            <div class="num">5</div>
+            <div class="lbl">snippets / pair max</div>
+          </div>
+          <div class="stat">
+            <div class="num">400</div>
+            <div class="lbl">char snippet cap</div>
+          </div>
+        </div>
+        <p>
+          Cache hits drop full-pipeline runs to seconds. Cache persisted as
+          <code>relation_cache.pkl</code>
+          after each successful run.
+        </p>
+      </section>
+
+      <footer>
+        Source: <a href="../nlp_relation.py">nlp_relation.py</a> · Spec:
+        <a href="nlp_relation.md">nlp_relation.md</a> · Orchestrator:
+        <a href="../main">main</a>
+      </footer>
+    </div>
+  </body>
+</html>

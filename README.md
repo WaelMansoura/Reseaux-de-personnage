@@ -11,7 +11,7 @@ Pipeline d'extraction de personnages et de relations à partir de textes frança
 5. **Construction du graphe** — agrégation NetworkX (`nlp_graph.py`).
 6. **Visualisation web** — export PyVis HTML interactif (`nlp_visualize_web.py`).
 
-Orchestration : [`nomodels-relations.ipynb`](nomodels-relations.ipynb).
+Orchestration : [`main`](main).
 
 ## Documentation des modules
 
@@ -31,6 +31,6 @@ Orchestration : [`nomodels-relations.ipynb`](nomodels-relations.ipynb).
 
 ## Exécution
 
-Ouvrir `nomodels-relations.ipynb`. Premier run télécharge `cardiffnlp/twitter-xlm-roberta-base-sentiment` (~500 Mo). Caches persistés sur disque (`ner_cache3.pkl`, `relation_cache.pkl`).
+Ouvrir `main`. Premier run télécharge `cardiffnlp/twitter-xlm-roberta-base-sentiment` (~500 Mo). Caches persistés sur disque (`ner_cache3.pkl`, `relation_cache.pkl`).
 
 Sortie finale : `all_networks.html`.
